@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         content: generatedContent,
         //music:musicResponse,
         music: "https://replicate.delivery/yhqm/unsA71lSRALJBNqeRtm8Bwok1SmlnpHF52sZOD4faB7lURFTA/out.mp3",
-        thumbnail: imageResponse[0],
+        thumbnail: imageResponse[0] as string,
         //thumbnail: 'https://replicate.delivery/yhqm/KRk9uGbzb06NDdWSKkrEYby4IO12SAZM0Uem3rY2tqxKyoiJA/out-0.png',
         script: scriptContent,
         speech: text_to_speech.audio_out,
