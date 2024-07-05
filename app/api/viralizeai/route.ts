@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       console.log("Generated Content:", generatedContent);
 
       
-      /*
+      
       const musicResponse = await replicate.run("meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb", {
         input: {
           prompt: `Generate a lively background music for this content: ${generatedContent}`,
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         },
       });
       console.log("Music Response:", musicResponse);
-      */
+      
       const input = {
         prompt: `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
                 Content: ${generatedContent}`,
@@ -96,8 +96,8 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         content: generatedContent,
-        //music:musicResponse,
-        music: "https://replicate.delivery/yhqm/unsA71lSRALJBNqeRtm8Bwok1SmlnpHF52sZOD4faB7lURFTA/out.mp3",
+        music:musicResponse,
+        //music: "https://replicate.delivery/yhqm/unsA71lSRALJBNqeRtm8Bwok1SmlnpHF52sZOD4faB7lURFTA/out.mp3",
         thumbnail: imageResponse[0] as string,
         //thumbnail: 'https://replicate.delivery/yhqm/KRk9uGbzb06NDdWSKkrEYby4IO12SAZM0Uem3rY2tqxKyoiJA/out-0.png',
         script: scriptContent,
