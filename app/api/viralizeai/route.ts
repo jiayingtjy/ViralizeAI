@@ -17,6 +17,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages } = body;
 
+    interface ReplicateResponse {
+      audio_out: string;
+    }
+
+
     console.log(messages);
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -50,12 +55,14 @@ export async function POST(req: Request) {
         },
       });
       console.log("Music Response:", musicResponse);
-    
+      
       const input = {
         prompt: `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
                 Content: ${generatedContent}`,
       };
-      const imageResponse = await replicate.run("bytedance/sdxl-lightning-4step:5f24084160c9089501c1b3545d9be3c27883ae2239b6f412990e82d4a6210f8f", { input });
+      const imageResponse = await replicate.run(
+        "bytedance/sdxl-lightning-4step:5f24084160c9089501c1b3545d9be3c27883ae2239b6f412990e82d4a6210f8f", 
+        { input })
       console.log("Image Response:", imageResponse);
 
       const marker = "**7. Full Script for the video content**";
@@ -71,7 +78,7 @@ export async function POST(req: Request) {
           waveform_temp: 0.7,
           history_prompt: "announcer",
         },
-      });
+      }) as ReplicateResponse;
 
       console.log("Text to Speech:", text_to_speech.audio_out);
 
