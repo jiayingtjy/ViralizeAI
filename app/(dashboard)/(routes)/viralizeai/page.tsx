@@ -167,6 +167,8 @@ const ContentGenerationPage = () => {
         setMusic(music);
       }
       if (thumbnail) {
+
+        
         setThumbnail(thumbnail);
       }
 
