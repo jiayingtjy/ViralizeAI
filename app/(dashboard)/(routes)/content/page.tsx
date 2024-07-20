@@ -193,6 +193,7 @@ const ContentGenerationPage = () => {
         )}
         <div className="flex flex-col-reverse gap-y-4">
           {messages2.map((message, index) => (
+            console.log(message),
             <div 
               key={index}
               className={cn(
