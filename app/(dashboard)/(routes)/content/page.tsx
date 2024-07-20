@@ -28,6 +28,7 @@ const ContentGenerationPage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [messages2, setMessages2] = useState<ChatCompletionMessageParam[]>([]);
+  const [isButtonVisible, setIsButtonVisible] = useState(true);
 
   // Initialize the form with validation schema and default values
   const form = useForm<z.infer<typeof formSchema>>({
@@ -119,25 +120,30 @@ const ContentGenerationPage = () => {
     }
   };
 
+  const handleExampleClick = () => {
+    const examplePrompt = "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.";
+    form.setValue("prompt", examplePrompt);
+    form.handleSubmit(onSubmit)();
+    setIsButtonVisible(false); // Hide the button after it is clicked
+  };
+
   const renderMessageContent = (content: string) => {
     return (
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-            h1: ({ node, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4" />,
-            h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-bold mb-3" />,
-            h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-bold mb-2" />,
-            strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
-            p: ({ node, ...props }) => <p {...props} className="" />,
-            ul: ({ node, ...props }) => <ul {...props} className="list-disc list-inside pl-6" />,
-            li: ({ node, ...props }) => <li {...props} className="" />,
-            table: ({ node, ...props }) => <table {...props} className="table-auto ustify-center border-collapse border border-gray-200 my-2" />,
-            th: ({ node, ...props }) => <th {...props} className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2" />,
-            td: ({ node, ...props }) => <td {...props} className="border border-gray-200 px-4 py-2" />,
-            tr: ({ node, ...props }) => <tr {...props} className="even:bg-pink-100" />,
-          }}
-          
-          
+          h1: ({ node, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4" />,
+          h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-bold mb-3" />,
+          h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-bold mb-2" />,
+          strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
+          p: ({ node, ...props }) => <p {...props} className="" />,
+          ul: ({ node, ...props }) => <ul {...props} className="list-disc list-inside pl-6" />,
+          li: ({ node, ...props }) => <li {...props} className="" />,
+          table: ({ node, ...props }) => <table {...props} className="table-auto justify-center border-collapse border border-gray-200 my-2" />,
+          th: ({ node, ...props }) => <th {...props} className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2" />,
+          td: ({ node, ...props }) => <td {...props} className="border border-gray-200 px-4 py-2" />,
+          tr: ({ node, ...props }) => <tr {...props} className="even:bg-pink-100" />,
+        }}
       >
         {content}
       </ReactMarkdown>
@@ -145,7 +151,7 @@ const ContentGenerationPage = () => {
   };
 
   return (
-    <div>
+    <div className="h-screen flex flex-col overflow-hidden">
       <Heading
         title="Idea & Content Generation"
         description="Your personal AI social media strategist"
@@ -153,16 +159,53 @@ const ContentGenerationPage = () => {
         iconColor="text-orange-500"
         bgColor="bg-orange-500/10"
       />
-      <div className="flex items-left justify-center mb-4">
-        <h3 className="bg-orange-500/20 text-center text-orange-500 font-bold py-2 px-6 rounded-lg mb-2 rounded-full">
+      <div className="flex items-left justify-center">
+        <h3 className="bg-orange-500/20 text-center text-orange-500 font-bold py-2 px-6 rounded-lg rounded-full">
           Describe your business, your product and yourself. What do you want to achieve?
         </h3>
       </div>
+      <div className="flex-1 overflow-auto px-4 my-4 lg:px-8">
+        <div className="space-y-4 mt-4">
+          {isLoading && (
+            <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
+              <Loader />
+            </div>
+          )}
+          {messages.length === 0 && !isLoading && (
+            <Empty label="No conversation started." />
+          )}
+          <div className="flex flex-col gap-y-4">
+            {messages2.map((message, index) => (
+              <div 
+                key={index}
+                className={cn(
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
+                )}
+              >
+                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                {typeof message.content === "string" ? (
+                  <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                ) : (
+                  "Invalid message content"
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div className="px-4 lg:px-8">
+        {isButtonVisible && (
+          <Button onClick={handleExampleClick} className="mb-4 w-full bg-orange-500">
+            <div className="text-left">
+              <span className="block">Try Out: How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.</span>
+            </div>
+          </Button>
+        )}
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+            className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
           >
             <FormField name="prompt" render={({ field }) => (
               <FormItem className="col-span-12 lg:col-span-10">
@@ -181,35 +224,6 @@ const ContentGenerationPage = () => {
             </Button>
           </form>
         </Form>
-      </div>
-      <div className="space-y-4 mt-4">
-        {isLoading && (
-          <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
-            <Loader />
-          </div>
-        )}
-        {messages.length == 0 && !isLoading && (
-          <Empty label="No conversation started." />
-        )}
-        <div className="flex flex-col-reverse gap-y-4">
-          {messages2.map((message, index) => (
-            console.log(message),
-            <div 
-              key={index}
-              className={cn(
-                "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
-              )}
-            >
-              {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-              {typeof message.content === "string" ? (
-                <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
-              ) : (
-                "Invalid message content"
-              )}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

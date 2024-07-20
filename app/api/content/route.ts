@@ -2,7 +2,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import OpenAIService from '@/app/core/openAIService';
-import { MAX_TOKENS } from "./constants";
 
 // Define the POST request handler for the API route
 export async function POST(req: Request) {
@@ -26,7 +25,7 @@ export async function POST(req: Request) {
 
     // Create an instance of the OpenAIService
     const oAIService = OpenAIService.getInstance(process.env.OPENAI_API_KEY);
-    const generatedText = await oAIService.generateText(messages, MAX_TOKENS);
+    const generatedText = await oAIService.generateText(messages);
     return NextResponse.json(generatedText);
 
   } catch (error) {

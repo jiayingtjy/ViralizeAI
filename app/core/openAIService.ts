@@ -23,12 +23,11 @@ class OpenAIService {
         return OpenAIService.instance;
     }
 
-    async generateText(msg: [], maxTokens: number = 150, model: string = "gpt-3.5-turbo"): Promise<OpenAI.Chat.Completions.ChatCompletionMessage> {
+    async generateText(msg: [], model: string = "gpt-3.5-turbo"): Promise<OpenAI.Chat.Completions.ChatCompletionMessage> {
         try {
             const response = await this.openai.chat.completions.create({
                 model: model,
-                messages: msg,
-                max_tokens: maxTokens,
+                messages: msg
             });
 
             if (response && response.choices && response.choices.length > 0) {

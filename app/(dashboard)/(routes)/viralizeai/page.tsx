@@ -181,6 +181,12 @@ const ContentGenerationPage = () => {
     }
   };
 
+  const handleExampleClick = () => {
+    const examplePrompt = "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.";
+    form.setValue("prompt", examplePrompt);
+    form.handleSubmit(onSubmit)();
+  };
+
   const renderMessageContent = (content: string) => {
     return (
       <ReactMarkdown
@@ -219,6 +225,9 @@ const ContentGenerationPage = () => {
         </h3>
       </div>
       <div className="px-4 lg:px-8">
+        <Button onClick={handleExampleClick} className="mb-4 w-full bg-pink-700">
+          E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.
+        </Button>
         <div className="mb-8 bg-pink-300/20 rounded-lg border w-full p-4 px-3 focus-within:shadow-sm gap-8">
           <Form {...form}>
             <form
@@ -325,8 +334,6 @@ const ContentGenerationPage = () => {
             </CardFooter>
           </Card>
         </div>
-        
-         
         )}
       </div>
     </div>
