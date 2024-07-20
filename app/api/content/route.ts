@@ -1,7 +1,7 @@
 // Use getAuth for server-side
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import OpenAIService from '../../core/openAIService';
+import OpenAIService from '@/app/core/openAIService';
 import { MAX_TOKENS } from "./constants";
 
 // Define the POST request handler for the API route
@@ -32,6 +32,6 @@ export async function POST(req: Request) {
   } catch (error) {
     // Log the error and return a 500 Internal Server Error response
     console.log("[CONVERSATION_ERROR]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }

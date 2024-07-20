@@ -1,7 +1,7 @@
 // Use getAuth for server-side
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import OpenAIService from '../../core/openAIService';
+import OpenAIService from '@/app/core/openAIService';
 
 // Define the POST request handler for the API route
 export async function POST(req: Request) {
@@ -19,19 +19,9 @@ export async function POST(req: Request) {
     }
 
     //if no messages passed in 
-    if (!prompt) {
+    if (!prompt || !amount || !resolution) {
       console.log("no msg?")
-      return new NextResponse("Prompt is  required", { status: 400 });
-    }
-
-    if (!amount) {
-      console.log("no msg?")
-      return new NextResponse("Amount is  required", { status: 400 });
-    }
-
-    if (!resolution) {
-      console.log("no msg?")
-      return new NextResponse("Resolution is  required", { status: 400 });
+      return new NextResponse("Prompt, amount, or resolution is missing", { status: 400 });
     }
     
     const oAIService = OpenAIService.getInstance(process.env.OPENAI_API_KEY);
@@ -41,6 +31,6 @@ export async function POST(req: Request) {
   } catch (error) {
     // Log the error and return a 500 Internal Server Error response
     console.log("[IMAGE_ERROR]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }
