@@ -30,6 +30,12 @@ const ContentGenerationPage = () => {
   const [messages2, setMessages2] = useState<ChatCompletionMessageParam[]>([]);
   const [isButtonVisible, setIsButtonVisible] = useState(true);
 
+  const examplePrompts = [
+    "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.",
+    "What are some content ideas for my bakery's social media? We specialize in artisan breads and pastries.",
+    "How can I increase engagement for my online yoga classes on Tiktok?",
+  ];
+
   // Initialize the form with validation schema and default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema), // Control validation of the form, cannot be empty
@@ -120,8 +126,7 @@ const ContentGenerationPage = () => {
     }
   };
 
-  const handleExampleClick = () => {
-    const examplePrompt = "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.";
+  const handleExampleClick = (examplePrompt: string) => {
     form.setValue("prompt", examplePrompt);
     form.handleSubmit(onSubmit)();
     setIsButtonVisible(false); // Hide the button after it is clicked
@@ -194,14 +199,16 @@ const ContentGenerationPage = () => {
           </div>
         </div>
       </div>
-      <div className="px-4 lg:px-8">
-        {isButtonVisible && (
-          <Button onClick={handleExampleClick} className="mb-4 w-full bg-orange-500">
+      <div className="flex justify-center mb-8">
+        {isButtonVisible && examplePrompts.map((prompt, index) => (
+          <Button key={index} onClick={() => handleExampleClick(prompt)} className="p-4 my-2 mx-2 max-w-96 box-content bg-orange-500">
             <div className="text-left">
-              <span className="block">Try Out: How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.</span>
+              <span className="block whitespace-pre-wrap">{prompt}</span>
             </div>
           </Button>
-        )}
+        ))}
+      </div>
+      <div className="px-4 lg:px-8">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
