@@ -135,6 +135,7 @@ const ContentGenerationPage = () => {
     } finally {
       setIsLoading(false);
       router.refresh();
+      form.setValue("prompt", "");
     }
   };
 
