@@ -24,60 +24,74 @@ export async function POST(req: Request) {
       return new NextResponse("Messages are required", { status: 400 });
     }
 
-    const textResponse = await openai.generateText(messages);
-    const generatedContent = textResponse.content;
+    const textStream = await openai.generateTextStream(messages);
 
-    console.log(generatedContent, "CONTENT");
-    
-    if (!generatedContent) {
-      return new NextResponse("No content generated", { status: 500 });
-    }
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Push initial text stream
+        const reader = textStream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(encoder.encode(`data: ${value}\n\n`));
+          }
+        } finally {
+          reader.releaseLock();
+        }
 
-    if (generatedContent) {
-      console.log("Generated Content:", generatedContent);
+        const textResponse = await openai.generateText(messages);
+        const generatedContent = textResponse.content;
 
-      const musicResponse = await replicate.musicgen({
-        prompt: `Generate a lively background music for this content: ${generatedContent}`,
-        model_version: "stereo-large",
-        output_format: "mp3",
-        normalization_strategy: "peak",
-      });
+        if (!generatedContent) {
+          controller.close();
+          return;
+        }
 
-      console.log("Music Response:", musicResponse);
+        controller.enqueue(encoder.encode(`data: ${generatedContent}\n\n`));
 
-      const input = `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
-                Content: ${generatedContent}`
+        const musicResponse = await replicate.musicgen({
+          prompt: `Generate a lively background music for this content: ${generatedContent}`,
+          model_version: "stereo-large",
+          output_format: "mp3",
+          normalization_strategy: "peak",
+        });
 
-      const imageResponse = await replicate.imagegen(
-        input) as ReplicateImageResponse;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(musicResponse)}\n\n`));
 
-      console.log("Image Response:", imageResponse[0]);
-      console.log("Image Response:", imageResponse);
+        const input = `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
+                Content: ${generatedContent}`;
 
-      const marker = "**7. Full Script for the video content**";
-      const parts = generatedContent.split(marker);
-      const scriptContent = parts.length > 1 ? `Hi ${parts[1].trim()}` : "No Script available";
+        const imageResponse = await replicate.imagegen(input) as ReplicateImageResponse;
 
-      const text_to_speech = await replicate.textToSpeech({
-        prompt: scriptContent,
-        text_temp: 0.7,
-        output_full: false,
-        waveform_temp: 0.7,
-        history_prompt: "announcer",
-      }) as ReplicateResponse;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(imageResponse[0])}\n\n`));
 
-      return NextResponse.json({
-        content: generatedContent,
-        music: musicResponse,
-        //music: "https://replicate.delivery/yhqm/unsA71lSRALJBNqeRtm8Bwok1SmlnpHF52sZOD4faB7lURFTA/out.mp3",
-        thumbnail: imageResponse[0] as string,
-        //thumbnail: 'https://replicate.delivery/yhqm/KRk9uGbzb06NDdWSKkrEYby4IO12SAZM0Uem3rY2tqxKyoiJA/out-0.png',
-        script: scriptContent,
-        speech: text_to_speech.audio_out,
-      });
-    } else {
-      return new NextResponse("Failed to generate content", { status: 500 });
-    }
+        const marker = "**7. Full Script for the video content**";
+        const parts = generatedContent.split(marker);
+        const scriptContent = parts.length > 1 ? `Hi ${parts[1].trim()}` : "No Script available";
+
+        const textToSpeech = await replicate.textToSpeech({
+          prompt: scriptContent,
+          text_temp: 0.7,
+          output_full: false,
+          waveform_temp: 0.7,
+          history_prompt: "announcer",
+        }) as ReplicateResponse;
+
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(textToSpeech.audio_out)}\n\n`));
+
+        controller.close();
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
 
   } catch (error) {
     console.error("[viralize_ERROR]", error);

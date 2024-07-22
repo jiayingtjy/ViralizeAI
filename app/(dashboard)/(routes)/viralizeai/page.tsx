@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 
 import { useRouter } from "next/navigation";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Empty } from "@/components/empty";
 import { Loader } from "@/components/loader";
 import { cn } from "@/lib/utils";
@@ -32,11 +32,13 @@ import Image from "next/image";
 const ContentGenerationPage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
-  const [messages2, setMessages2] = useState<ChatCompletionMessageParam[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [music, setMusic] = useState<string | null>(null);
   const [script, setScript] = useState<string | null>(null);
   const [speech, setSpeech] = useState<string | null>(null);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [isButtonVisible, setIsButtonVisible] = useState(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Initialize the form with validation schema and default values
   const form = useForm<z.infer<typeof formSchema>>({
@@ -46,7 +48,24 @@ const ContentGenerationPage = () => {
     }
   });
 
-  const isLoading = form.formState.isSubmitting;
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const examplePrompts = [
+    "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.",
+    "What are some content ideas for my bakery's social media? We specialize in artisan breads and pastries.",
+    "How can I increase engagement for my online yoga classes on TikTok?",
+  ];
+
+  const handleExampleClick = (examplePrompt: string) => {
+    form.setValue("prompt", examplePrompt);
+    form.handleSubmit(onSubmit)();
+    setIsButtonVisible(false);
+  };
 
   const createPrompt = (userInput: string) => {
     const tiktokUserData = `TikTok User Data: 235 Following, 36 Followers, 0 Likes.`;
@@ -127,38 +146,52 @@ const ContentGenerationPage = () => {
   
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     try {
       const userInput = values.prompt;
       const detailedPrompt = createPrompt(userInput);
 
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
-        content: detailedPrompt,
-      };
-      const userMessage2: ChatCompletionMessageParam = {
-        role: "user",
         content: userInput,
       };
 
-      const newMessages = [...messages, userMessage];
-      const newMessages2 = [...messages2, userMessage2];
+      setMessages((current) => [...current, userMessage]);
 
-      const response = await axios.post("/api/viralizeai", {
-        messages: newMessages
+      const newMessages = [
+        ...messages,
+        userMessage,
+        { role: "user", content: detailedPrompt },
+      ];
+
+      const response = await fetch("/api/viralizeai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: newMessages }),
       });
 
-      const { content, music, thumbnail, script, speech } = response.data;
+      if (!response.body) throw new Error("No response body");
 
-      console.log(response.data);
-      setMessages((current) => [...current, { role: "assistant", content }, userMessage]);
-      setMessages2((current) => [...current, { role: "assistant", content }, userMessage2]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulatedText += decoder.decode(value);
+        setMessages((current) => [
+          ...current.filter((msg) => msg.role !== "assistant"),
+          { role: "assistant", content: accumulatedText },
+        ]);
+      }
 
       if(script) { 
         setScript(script);
       }
 
-
-      console.log(speech)
       if (speech) {
         setSpeech(speech);
       }
@@ -166,25 +199,18 @@ const ContentGenerationPage = () => {
       if (music) {
         setMusic(music);
       }
-      if (thumbnail) {
 
-        
+      if (thumbnail) {
         setThumbnail(thumbnail);
       }
 
-
-      form.reset();
     } catch (error: any) {
       console.log(error);
     } finally {
       router.refresh();
+      form.reset();
+      setIsLoading(false);
     }
-  };
-
-  const handleExampleClick = () => {
-    const examplePrompt = "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.";
-    form.setValue("prompt", examplePrompt);
-    form.handleSubmit(onSubmit)();
   };
 
   const renderMessageContent = (content: string) => {
@@ -211,7 +237,7 @@ const ContentGenerationPage = () => {
   };
 
   return (
-    <div>
+    <div className="h-screen flex flex-col overflow-hidden">
       <Heading
         title="All in One Content Generation"
         description="Your personal AI social media strategist"
@@ -220,121 +246,134 @@ const ContentGenerationPage = () => {
         bgColor="bg-pink-500/10"
       />
       <div className="flex items-left justify-center mb-4 p-5">
-        <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+        <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-2 px-6 rounded-lg rounded-full">
           Transform any thoughts into high quality content, idea, audio, script, music, and video into viral content!<br /> Blend your persona with trending topics and your goals for the ultimate viral creation!
         </h3>
       </div>
-      <div className="px-4 lg:px-8">
-        <Button onClick={handleExampleClick} className="mb-4 w-full bg-pink-700">
-          E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.
-        </Button>
-        <div className="mb-8 bg-pink-300/20 rounded-lg border w-full p-4 px-3 focus-within:shadow-sm gap-8">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
-            >
-              <FormField name="prompt" render={({ field }) => (
-                <FormItem className="col-span-12 lg:col-span-10">
-                  <FormControl className="m-0 p-0">
-                    <Input
-                      className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                      disabled={isLoading}
-                      placeholder="E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports."
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )} />
-              <Button disabled={isLoading} className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700">
-                Generate
-              </Button>
-            </form>
-          </Form>
+      <div
+        className="flex-1 overflow-auto px-4 my-4 lg:px-8"
+        ref={chatContainerRef}
+      >
+        <div className="space-y-4 mt-4 p-6">
+          {isLoading && (
+            <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
+              <Loader />
+            </div>
+          )}
+          {messages.length == 0 && !isLoading && (
+            <Empty label="No conversation started." />
+          )}
+          <div className="flex flex-col gap-y-4">
+            {messages.map((message, index) => (
+              <div 
+                key={index}
+                className={cn(
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
+                )}
+              >
+                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                {typeof message.content === "string" ? (
+                  <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                ) : (
+                  "Invalid message content"
+                )}
+              </div>
+            ))}
+          </div>
+          {script && (
+            <div>
+            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                Too Lazy to Record? Here is your generated script and voiceover!
+            </h3>
+            <p>Here is your script: {script}</p>
+            </div>
+          )}
+          {speech && (   
+              <audio controls className="w-full mt-8 p-1">
+                <source src={speech}  type="audio/wav"  />
+                Your browser does not support the audio element.
+              </audio>
+          )}
+          {music && (
+            <div className="space-y-4 mt-4">
+              <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                Your Personalized Background Music for this video content is generated! 
+              </h3>
+              <audio controls className="w-full mt-8 p-1">
+                <source src={music} type = "audio/mp3"/>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+          {thumbnail && (
+            <div className="space-y-4 mt-4">
+            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+              Your Generated Thumbnail for this video content.
+            </h3>
+            <Card className="rounded-lg overflow-hidden">
+              <div className="relative aspect-square">
+                <Image 
+                  src = {thumbnail} 
+                  alt='generated image' 
+                  width={500}  // Adjust the width as necessary
+                  height={500} // Adjust the height as necessary
+                  layout="responsive" // Optional: To maintain the aspect ratio
+                  objectFit="cover"  // Optional: To define how the image should be resized
+                />
+              </div>
+              <CardFooter className="p-2">
+                <Button
+                  onClick={() => window.open(thumbnail)}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+          )}
         </div>
       </div>
-      <div className="space-y-4 mt-4 p-6">
-        {isLoading && (
-          <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
-            <Loader />
-          </div>
-        )}
-        {messages.length == 0 && !isLoading && (
-          <Empty label="No conversation started." />
-        )}
-        <div className="flex flex-col-reverse gap-y-4">
-          {messages2.map((message, index) => (
-            <div 
+      <div className="flex justify-center mb-8">
+        {isButtonVisible &&
+          examplePrompts.map((prompt, index) => (
+            <Button
               key={index}
-              className={cn(
-                "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
-              )}
+              onClick={() => handleExampleClick(prompt)}
+              className="p-4 my-2 mx-2 max-w-96 box-content bg-pink-500"
             >
-              {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-              {typeof message.content === "string" ? (
-                <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
-              ) : (
-                "Invalid message content"
-              )}
-            </div>
+              <div className="text-left">
+                <span className="block whitespace-pre-wrap">{prompt}</span>
+              </div>
+            </Button>
           ))}
-        </div>
-        
-        {script && (
-          <div>
-          <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-              Too Lazy to Record? Here is your generated script and voiceover!
-          </h3>
-          <p>Here is your script: {script}</p>
-          </div>
-        )}
-        {speech && (   
-            <audio controls className="w-full mt-8 p-1">
-              <source src={speech}  type="audio/wav"  />
-              Your browser does not support the audio element.
-            </audio>
-        )}
-        {music && (
-          <div className="space-y-4 mt-4">
-            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-              Your Personalized Background Music for this video content is generated! 
-            </h3>
-            <audio controls className="w-full mt-8 p-1">
-              <source src={music} type = "audio/mp3"/>
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        )}
-        {thumbnail && (
-          <div className="space-y-4 mt-4">
-          <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-            Your Generated Thumbnail for this video content.
-          </h3>
-          <Card className="rounded-lg overflow-hidden">
-            <div className="relative aspect-square">
-              <Image 
-                src = {thumbnail} 
-                alt='generated image' 
-                width={500}  // Adjust the width as necessary
-                height={500} // Adjust the height as necessary
-                layout="responsive" // Optional: To maintain the aspect ratio
-                objectFit="cover"  // Optional: To define how the image should be resized
-              />
-            </div>
-            <CardFooter className="p-2">
-              <Button
-                onClick={() => window.open(thumbnail)}
-                variant="secondary"
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-        )}
+      </div>
+      <div className="px-4 lg:px-8">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+          >
+            <FormField name="prompt" render={({ field }) => (
+              <FormItem className="col-span-12 lg:col-span-10">
+                <FormControl className="m-0 p-0">
+                  <Input
+                    className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                    disabled={isLoading}
+                    placeholder="E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports."
+                    {...field}
+                  />
+                </FormControl>
+              </FormItem>
+            )} />
+            <Button disabled={isLoading} className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700">
+              Generate
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
