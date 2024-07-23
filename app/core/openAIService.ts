@@ -43,26 +43,15 @@ class OpenAIService {
     }
   }
 
-  async generateTextStream(msg: []): Promise<ReadableStream> {
+  async generateTextStream(msg: []): Promise<any> {
     try {
       const response = await this.openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: msg,
         stream: true,
       });
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        async start(controller) {
-          for await (const chunk of response) {
-            controller.enqueue(
-              encoder.encode(chunk.choices[0]?.delta?.content || "")
-            );
-          }
-          controller.close();
-        },
-      });
-
-      return stream;
+      
+      return response;
     } catch (error) {
       console.error("Error generating text:", error);
       throw error;

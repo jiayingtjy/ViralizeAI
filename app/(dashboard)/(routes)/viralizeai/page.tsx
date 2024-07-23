@@ -138,9 +138,7 @@ const ContentGenerationPage = () => {
 
       **7. Full Script for the video content**
       "[Generate a interesting, captivating script for the whole duration of the video. The script should be concise and less than or equal to 150 words.]"
-    
       `;
-  
     return detailedPrompt;
   };
   

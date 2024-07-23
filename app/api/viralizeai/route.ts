@@ -9,7 +9,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages } = body;
     const openai = OpenAIService.getInstance(process.env.OPENAI_API_KEY);
-    const replicate = ReplicateServices.getInstance(process.env.REPLICATE_API_KEY);
+    const replicate = ReplicateServices.getInstance(
+      process.env.REPLICATE_API_KEY
+    );
 
     interface ReplicateResponse {
       audio_out: string;
@@ -25,25 +27,19 @@ export async function POST(req: Request) {
     }
 
     const textStream = await openai.generateTextStream(messages);
-
     const encoder = new TextEncoder();
+    var generatedContent = "";
     const stream = new ReadableStream({
       async start(controller) {
         // Push initial text stream
-        const reader = textStream.getReader();
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            controller.enqueue(encoder.encode(`data: ${value}\n\n`));
-          }
-        } finally {
-          reader.releaseLock();
+        for await (const chunk of textStream) {
+          const text = chunk.choices[0]?.delta?.content || "";
+          controller.enqueue(
+            encoder.encode(text)
+          );
+          generatedContent += text;
         }
-
-        const textResponse = await openai.generateText(messages);
-        const generatedContent = textResponse.content;
-
+        
         if (!generatedContent) {
           controller.close();
           return;
@@ -58,29 +54,37 @@ export async function POST(req: Request) {
           normalization_strategy: "peak",
         });
 
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(musicResponse)}\n\n`));
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(musicResponse)}\n\n`)
+        );
 
         const input = `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
                 Content: ${generatedContent}`;
 
-        const imageResponse = await replicate.imagegen(input) as ReplicateImageResponse;
+        const imageResponse = (await replicate.imagegen(
+          input
+        )) as ReplicateImageResponse;
 
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(imageResponse[0])}\n\n`));
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(imageResponse[0])}\n\n`)
+        );
 
         const marker = "**7. Full Script for the video content**";
         const parts = generatedContent.split(marker);
-        const scriptContent = parts.length > 1 ? `Hi ${parts[1].trim()}` : "No Script available";
+        const scriptContent =
+          parts.length > 1 ? `Hi ${parts[1].trim()}` : "No Script available";
 
-        const textToSpeech = await replicate.textToSpeech({
+        const textToSpeech = (await replicate.textToSpeech({
           prompt: scriptContent,
           text_temp: 0.7,
           output_full: false,
           waveform_temp: 0.7,
           history_prompt: "announcer",
-        }) as ReplicateResponse;
+        })) as ReplicateResponse;
 
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(textToSpeech.audio_out)}\n\n`));
-
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(textToSpeech.audio_out)}\n\n`)
+        );
         controller.close();
       },
     });
@@ -92,7 +96,6 @@ export async function POST(req: Request) {
         Connection: "keep-alive",
       },
     });
-
   } catch (error) {
     console.error("[viralize_ERROR]", error);
     return new NextResponse("Internal error", { status: 500 });
