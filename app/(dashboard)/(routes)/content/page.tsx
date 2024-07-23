@@ -163,25 +163,32 @@ const ContentGenerationPage = () => {
           strong: ({ node, ...props }) => (
             <strong {...props} className="font-bold" />
           ),
-          p: ({ node, ...props }) => <p {...props} className="" />,
-          ul: ({ node, ...props }) => (
-            <ul {...props} className="list-disc list-inside pl-6" />
+          p: ({ node, ...props }) => (
+            <p {...props} className="whitespace-pre-wrap break-words" />
           ),
-          li: ({ node, ...props }) => <li {...props} className="" />,
+          ul: ({ node, ...props }) => (
+            <ul {...props} className="list-disc list-inside pl-6 break-words" />
+          ),
+          li: ({ node, ...props }) => <li {...props} className="break-words" />,
           table: ({ node, ...props }) => (
-            <table
-              {...props}
-              className="table-auto justify-center border-collapse border border-gray-200 my-2"
-            />
+            <div className="overflow-auto">
+              <table
+                {...props}
+                className="table-auto justify-center border-collapse border border-gray-200 my-2 w-full"
+              />
+            </div>
           ),
           th: ({ node, ...props }) => (
             <th
               {...props}
-              className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2"
+              className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2 break-words"
             />
           ),
           td: ({ node, ...props }) => (
-            <td {...props} className="border border-gray-200 px-4 py-2" />
+            <td
+              {...props}
+              className="border border-gray-200 px-4 py-2 break-words"
+            />
           ),
           tr: ({ node, ...props }) => (
             <tr {...props} className="even:bg-pink-100" />
@@ -218,7 +225,7 @@ const ContentGenerationPage = () => {
               <Loader />
             </div>
           )}
-          {messages.length === 0 && !isLoading && (
+          {messages.length == 0 && !isLoading && (
             <Empty label="No conversation started." />
           )}
           <div className="flex flex-col gap-y-4">
@@ -226,7 +233,7 @@ const ContentGenerationPage = () => {
               <div
                 key={index}
                 className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg break-words",
                   message.role === "user"
                     ? "bg-white border border-black/10"
                     : "bg-muted"
@@ -234,7 +241,7 @@ const ContentGenerationPage = () => {
               >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 {typeof message.content === "string" ? (
-                  <div className="whitespace-pre-wrap">
+                  <div className="whitespace-pre-wrap break-words w-full overflow-auto">
                     {renderMessageContent(message.content)}
                   </div>
                 ) : (
@@ -245,6 +252,7 @@ const ContentGenerationPage = () => {
           </div>
         </div>
       </div>
+
       <div className="flex justify-center mb-8">
         {isButtonVisible &&
           examplePrompts.map((prompt, index) => (

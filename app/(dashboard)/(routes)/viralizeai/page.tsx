@@ -44,8 +44,8 @@ const ContentGenerationPage = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: ""
-    }
+      prompt: "",
+    },
   });
 
   useEffect(() => {
@@ -74,8 +74,9 @@ const ContentGenerationPage = () => {
       2. Title: @tiktok it’s your turn! ⚡️🙋🏿‍♂️ 🙌🏿😂 #tiktoklearnfromkhaby#learnfromkhaby, Description: Mimics Khaby Lame’s expressions and gestures. Likes: 24,400,000, Comments: 255,900, Shares: 94,000, Views: 190,800,000, Duration: 11 seconds, Share URL: https://www.tiktok.com/@khaby.lame/video/6965122051178892549?is_from_webapp=1&sender_device=pc&web_id=7384727992465901072`;
     const personaPrompt = `You are a TikTok social media strategist helping your client create the best TikTok content to drive traffic, engagement, and followers. You are innovative, creative, and experienced in generating viral content.`;
     const inferCategoryPrompt = `Infer the category the user is in based on their profile description.`;
-    const objective = "Increase reach, traffic, offline customers, and customer retention.";
-  
+    const objective =
+      "Increase reach, traffic, offline customers, and customer retention.";
+
     const detailedPrompt = `
       ${personaPrompt}
       Based on your client's background: ${tiktokUserData}, ${userInput}, ${inferCategoryPrompt}, and the following video data:
@@ -141,7 +142,6 @@ const ContentGenerationPage = () => {
       `;
     return detailedPrompt;
   };
-  
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -186,7 +186,7 @@ const ContentGenerationPage = () => {
         ]);
       }
 
-      if(script) { 
+      if (script) {
         setScript(script);
       }
 
@@ -201,7 +201,6 @@ const ContentGenerationPage = () => {
       if (thumbnail) {
         setThumbnail(thumbnail);
       }
-
     } catch (error: any) {
       console.log(error);
     } finally {
@@ -216,17 +215,48 @@ const ContentGenerationPage = () => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ node, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4" />,
-          h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-bold mb-3" />,
-          h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-bold mb-2" />,
-          strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
-          p: ({ node, ...props }) => <p {...props} className="" />,
-          ul: ({ node, ...props }) => <ul {...props} className="list-disc list-inside pl-6" />,
-          li: ({ node, ...props }) => <li {...props} className="" />,
-          table: ({ node, ...props }) => <table {...props} className="table-auto justify-center border-collapse border border-gray-200 my-2" />,
-          th: ({ node, ...props }) => <th {...props} className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2" />,
-          td: ({ node, ...props }) => <td {...props} className="border border-gray-200 px-4 py-2" />,
-          tr: ({ node, ...props }) => <tr {...props} className="even:bg-pink-100" />,
+          h1: ({ node, ...props }) => (
+            <h1 {...props} className="text-2xl font-bold mb-4" />
+          ),
+          h2: ({ node, ...props }) => (
+            <h2 {...props} className="text-xl font-bold mb-3" />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 {...props} className="text-lg font-bold mb-2" />
+          ),
+          strong: ({ node, ...props }) => (
+            <strong {...props} className="font-bold" />
+          ),
+          p: ({ node, ...props }) => (
+            <p {...props} className="whitespace-pre-wrap break-words" />
+          ),
+          ul: ({ node, ...props }) => (
+            <ul {...props} className="list-disc list-inside pl-6 break-words" />
+          ),
+          li: ({ node, ...props }) => <li {...props} className="break-words" />,
+          table: ({ node, ...props }) => (
+            <div className="overflow-auto">
+              <table
+                {...props}
+                className="table-auto justify-center border-collapse border border-gray-200 my-2 w-full"
+              />
+            </div>
+          ),
+          th: ({ node, ...props }) => (
+            <th
+              {...props}
+              className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2 break-words"
+            />
+          ),
+          td: ({ node, ...props }) => (
+            <td
+              {...props}
+              className="border border-gray-200 px-4 py-2 break-words"
+            />
+          ),
+          tr: ({ node, ...props }) => (
+            <tr {...props} className="even:bg-pink-100" />
+          ),
         }}
       >
         {content}
@@ -245,14 +275,17 @@ const ContentGenerationPage = () => {
       />
       <div className="flex items-left justify-center mb-4 p-5">
         <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-2 px-6 rounded-lg rounded-full">
-          Transform any thoughts into high quality content, idea, audio, script, music, and video into viral content!<br /> Blend your persona with trending topics and your goals for the ultimate viral creation!
+          Transform any thoughts into high quality content, idea, audio, script,
+          music, and video into viral content!
+          <br /> Blend your persona with trending topics and your goals for the
+          ultimate viral creation!
         </h3>
       </div>
       <div
         className="flex-1 overflow-auto px-4 my-4 lg:px-8"
         ref={chatContainerRef}
       >
-        <div className="space-y-4 mt-4 p-6">
+        <div className="space-y-4 mt-4">
           {isLoading && (
             <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
               <Loader />
@@ -263,16 +296,20 @@ const ContentGenerationPage = () => {
           )}
           <div className="flex flex-col gap-y-4">
             {messages.map((message, index) => (
-              <div 
+              <div
                 key={index}
                 className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                  message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
+                  "p-8 w-full flex items-start gap-x-8 rounded-lg break-words",
+                  message.role === "user"
+                    ? "bg-white border border-black/10"
+                    : "bg-muted"
                 )}
               >
                 {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
                 {typeof message.content === "string" ? (
-                  <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                  <div className="whitespace-pre-wrap break-words w-full overflow-auto">
+                    {renderMessageContent(message.content)}
+                  </div>
                 ) : (
                   "Invalid message content"
                 )}
@@ -281,60 +318,62 @@ const ContentGenerationPage = () => {
           </div>
           {script && (
             <div>
-            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+              <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
                 Too Lazy to Record? Here is your generated script and voiceover!
-            </h3>
-            <p>Here is your script: {script}</p>
+              </h3>
+              <p>Here is your script: {script}</p>
             </div>
           )}
-          {speech && (   
-              <audio controls className="w-full mt-8 p-1">
-                <source src={speech}  type="audio/wav"  />
-                Your browser does not support the audio element.
-              </audio>
+          {speech && (
+            <audio controls className="w-full mt-8 p-1">
+              <source src={speech} type="audio/wav" />
+              Your browser does not support the audio element.
+            </audio>
           )}
           {music && (
             <div className="space-y-4 mt-4">
               <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-                Your Personalized Background Music for this video content is generated! 
+                Your Personalized Background Music for this video content is
+                generated!
               </h3>
               <audio controls className="w-full mt-8 p-1">
-                <source src={music} type = "audio/mp3"/>
+                <source src={music} type="audio/mp3" />
                 Your browser does not support the audio element.
               </audio>
             </div>
           )}
           {thumbnail && (
             <div className="space-y-4 mt-4">
-            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-              Your Generated Thumbnail for this video content.
-            </h3>
-            <Card className="rounded-lg overflow-hidden">
-              <div className="relative aspect-square">
-                <Image 
-                  src = {thumbnail} 
-                  alt='generated image' 
-                  width={500}  // Adjust the width as necessary
-                  height={500} // Adjust the height as necessary
-                  layout="responsive" // Optional: To maintain the aspect ratio
-                  objectFit="cover"  // Optional: To define how the image should be resized
-                />
-              </div>
-              <CardFooter className="p-2">
-                <Button
-                  onClick={() => window.open(thumbnail)}
-                  variant="secondary"
-                  className="w-full"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+              <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                Your Generated Thumbnail for this video content.
+              </h3>
+              <Card className="rounded-lg overflow-hidden">
+                <div className="relative aspect-square">
+                  <Image
+                    src={thumbnail}
+                    alt="generated image"
+                    width={500} // Adjust the width as necessary
+                    height={500} // Adjust the height as necessary
+                    layout="responsive" // Optional: To maintain the aspect ratio
+                    objectFit="cover" // Optional: To define how the image should be resized
+                  />
+                </div>
+                <CardFooter className="p-2">
+                  <Button
+                    onClick={() => window.open(thumbnail)}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
           )}
         </div>
       </div>
+
       <div className="flex justify-center mb-8">
         {isButtonVisible &&
           examplePrompts.map((prompt, index) => (
@@ -355,19 +394,25 @@ const ContentGenerationPage = () => {
             onSubmit={form.handleSubmit(onSubmit)}
             className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
           >
-            <FormField name="prompt" render={({ field }) => (
-              <FormItem className="col-span-12 lg:col-span-10">
-                <FormControl className="m-0 p-0">
-                  <Input
-                    className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                    disabled={isLoading}
-                    placeholder="E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports."
-                    {...field}
-                  />
-                </FormControl>
-              </FormItem>
-            )} />
-            <Button disabled={isLoading} className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700">
+            <FormField
+              name="prompt"
+              render={({ field }) => (
+                <FormItem className="col-span-12 lg:col-span-10">
+                  <FormControl className="m-0 p-0">
+                    <Input
+                      className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                      disabled={isLoading}
+                      placeholder="E.g. How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports."
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <Button
+              disabled={isLoading}
+              className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700"
+            >
               Generate
             </Button>
           </form>
@@ -375,6 +420,6 @@ const ContentGenerationPage = () => {
       </div>
     </div>
   );
-}
+};
 
 export default ContentGenerationPage;
