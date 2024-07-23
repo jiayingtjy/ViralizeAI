@@ -3,7 +3,6 @@
 import * as z from "zod";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -286,11 +285,6 @@ const ContentGenerationPage = () => {
         ref={chatContainerRef}
       >
         <div className="space-y-4 mt-4">
-          {isLoading && (
-            <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
-              <Loader />
-            </div>
-          )}
           {messages.length == 0 && !isLoading && (
             <Empty label="No conversation started." />
           )}
@@ -373,7 +367,6 @@ const ContentGenerationPage = () => {
           )}
         </div>
       </div>
-
       <div className="flex justify-center mb-8">
         {isButtonVisible &&
           examplePrompts.map((prompt, index) => (
@@ -392,7 +385,7 @@ const ContentGenerationPage = () => {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+            className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2 relative"
           >
             <FormField
               name="prompt"
@@ -415,6 +408,11 @@ const ContentGenerationPage = () => {
             >
               Generate
             </Button>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
+                <Loader />
+              </div>
+            )}
           </form>
         </Form>
       </div>
