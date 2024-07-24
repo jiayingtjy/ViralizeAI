@@ -39,13 +39,11 @@ export async function POST(req: Request) {
           );
           generatedContent += text;
         }
-        
+
         if (!generatedContent) {
           controller.close();
           return;
         }
-
-        controller.enqueue(encoder.encode(`data: ${generatedContent}\n\n`));
 
         const musicResponse = await replicate.musicgen({
           prompt: `Generate a lively background music for this content: ${generatedContent}`,
@@ -54,8 +52,9 @@ export async function POST(req: Request) {
           normalization_strategy: "peak",
         });
 
+        // data:... is fixed. Adding a space behind data: will break the system
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(musicResponse)}\n\n`)
+          encoder.encode(`data:${JSON.stringify(musicResponse)}\n\n`)
         );
 
         const input = `Generate an attractive thumbnail image for the following video content, promoting a product with a special 75% discount. The thumbnail should have a vibrant and eye-catching design to emphasize the discount, making it clear that this is a promotional advertisement. Include the discount prominently within the image.
@@ -66,7 +65,7 @@ export async function POST(req: Request) {
         )) as ReplicateImageResponse;
 
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(imageResponse[0])}\n\n`)
+          encoder.encode(`data:${JSON.stringify(imageResponse[0])}\n\n`)
         );
 
         const marker = "**7. Full Script for the video content**";
@@ -82,8 +81,12 @@ export async function POST(req: Request) {
           history_prompt: "announcer",
         })) as ReplicateResponse;
 
+        // controller.enqueue(
+        //   encoder.encode(`data:${JSON.stringify(scriptContent)}\n\n`)
+        // );
+
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(textToSpeech.audio_out)}\n\n`)
+          encoder.encode(`data:${JSON.stringify(textToSpeech.audio_out)}\n\n`)
         );
         controller.close();
       },

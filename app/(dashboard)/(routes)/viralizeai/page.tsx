@@ -147,20 +147,20 @@ const ContentGenerationPage = () => {
     try {
       const userInput = values.prompt;
       const detailedPrompt = createPrompt(userInput);
-
+  
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
         content: userInput,
       };
-
+  
       setMessages((current) => [...current, userMessage]);
-
+  
       const newMessages = [
         ...messages,
         userMessage,
         { role: "user", content: detailedPrompt },
       ];
-
+  
       const response = await fetch("/api/viralizeai", {
         method: "POST",
         headers: {
@@ -168,37 +168,46 @@ const ContentGenerationPage = () => {
         },
         body: JSON.stringify({ messages: newMessages }),
       });
-
+  
       if (!response.body) throw new Error("No response body");
-
+  
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let accumulatedText = "";
-
+      const removeQuotes = (str: string) => str.replace(/^"|"$/g, '').replace(/\\+$/, ''); // Updated to remove trailing quotes and backslashes
+      const urlRegex = /(https?:\/\/[^\s]+)/g; // Regex to match URLs
+      const imageUrlRegex = /\.(jpeg|jpg|gif|png|svg)$/i;
+      const musicUrlRegex = /\.(mp3)$/i;
+      const speechUrlRegex = /\.(wav)$/i;
+  
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        accumulatedText += decoder.decode(value);
-        setMessages((current) => [
-          ...current.filter((msg) => msg.role !== "assistant"),
-          { role: "assistant", content: accumulatedText },
-        ]);
-      }
-
-      if (script) {
-        setScript(script);
-      }
-
-      if (speech) {
-        setSpeech(speech);
-      }
-
-      if (music) {
-        setMusic(music);
-      }
-
-      if (thumbnail) {
-        setThumbnail(thumbnail);
+        const decodedText = decoder.decode(value);
+        console.log(decodedText);
+        
+        if (decodedText.startsWith("data:")) {
+          const contentMatch = decodedText.split("data:")[1];
+          if (contentMatch) {
+            const content = removeQuotes(contentMatch.match(urlRegex)?.[0] || "");
+            console.log(content);
+            if (imageUrlRegex.test(content)) {
+              setThumbnail(content);
+            } else if (speechUrlRegex.test(content)) {
+              setSpeech(content);
+            } else if (musicUrlRegex.test(content)) {
+              setMusic(content);
+            } else {
+              setScript(content);
+            }
+          }
+        } else {
+          accumulatedText += decodedText;
+          setMessages((current) => [
+            ...current.filter((msg) => msg.role !== "assistant"),
+            { role: "assistant", content: accumulatedText },
+          ]);
+        }
       }
     } catch (error: any) {
       console.log(error);
@@ -208,6 +217,8 @@ const ContentGenerationPage = () => {
       setIsLoading(false);
     }
   };
+  
+  
 
   const renderMessageContent = (content: string) => {
     return (
@@ -248,10 +259,7 @@ const ContentGenerationPage = () => {
             />
           ),
           td: ({ node, ...props }) => (
-            <td
-              {...props}
-              className="border border-gray-200 px-4 py-2 break-words"
-            />
+            <td {...props} className="border border-gray-200 px-4 py-2 break-words" />
           ),
           tr: ({ node, ...props }) => (
             <tr {...props} className="even:bg-pink-100" />
@@ -262,6 +270,8 @@ const ContentGenerationPage = () => {
       </ReactMarkdown>
     );
   };
+  
+  
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -319,10 +329,15 @@ const ContentGenerationPage = () => {
             </div>
           )}
           {speech && (
-            <audio controls className="w-full mt-8 p-1">
-              <source src={speech} type="audio/wav" />
-              Your browser does not support the audio element.
-            </audio>
+            <div>
+              <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                Here is your generated voiceover for this video content!
+              </h3>
+              <audio controls className="w-full mt-8 p-1">
+                <source src={speech} type="audio/wav" />
+                Your browser does not support the audio element.
+              </audio>
+            </div>
           )}
           {music && (
             <div className="space-y-4 mt-4">
