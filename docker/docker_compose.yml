@@ -1,0 +1,52 @@
+services:
+  app:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      MONGODB_URI: 'mongodb://admin:password@mongodb:27017/viralizeai'
+      REDIS_URL: 'redis://redis:6379'
+
+  worker:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URI: 'amqp://rabbitmq:5672'
+    command: "npm run worker"
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: admin
+      MONGODB_INITDB_ROOT_PASSWORD: password
+      MONGODB_INITDB_DATABASE: viralizeai
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+      - ./init-mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+
+volumes:
+  mongo_data:

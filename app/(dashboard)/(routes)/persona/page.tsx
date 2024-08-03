@@ -50,7 +50,7 @@ const PersonaPage = () => {
 
       const newPersonaData = [...personaData, userMessage];
 
-      const response = await fetch("/api/tiktok/user/info", {
+      const response = await fetch("/api/persona", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
