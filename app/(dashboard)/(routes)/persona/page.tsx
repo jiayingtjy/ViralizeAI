@@ -42,7 +42,7 @@ const PersonaPage = () => {
     setIsLoading(true);
     try {
       const userInput = values.prompt;
-      const detailedPrompt = createPersonaAnalysisPrompt(userInput);
+      const detailedPrompt: string = createPersonaAnalysisPrompt(userInput);
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
         content: detailedPrompt,
@@ -64,7 +64,7 @@ const PersonaPage = () => {
 
       const responseJson = await response.json();
 
-      console.log("API Response: ", responseJson.data.user);
+      console.log("API Response: ", responseJson);
 
       // Adding the response data to the personaData array correctly
       setPersonaData((current) => [...current, userMessage]);

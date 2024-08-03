@@ -32,7 +32,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "worker/worker.mjs"  ],
   "exclude": [
     "node_modules"
   ]

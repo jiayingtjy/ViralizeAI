@@ -27,32 +27,28 @@ import PersonaPage from "../persona/page";
 import TrendsPage from "../trends/page";
 import { Card, CardFooter } from "@/components/ui/card";
 import Image from "next/image";
+import { set } from "mongoose";
 
 const ContentGenerationPage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [music, setMusic] = useState<string | null>(null);
-  const [script, setScript] = useState<string | null>(null);
-  const [speech, setSpeech] = useState<string | null>(null);
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [media, setMedia] = useState<{ script: string | null; speech: string | null; music: string | null; thumbnail: string | null }>({
+    script: null,
+    speech: null,
+    music: null,
+    thumbnail: null
+  });
   const [isButtonVisible, setIsButtonVisible] = useState(true);
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize the form with validation schema and default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       prompt: "",
     },
   });
-
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   const examplePrompts = [
     "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.",
@@ -142,10 +138,49 @@ const ContentGenerationPage = () => {
     return detailedPrompt;
   };
 
+  const addChatMessage = (senderId: string, message: string, message_type: string) => {
+    const chat_type = "viralizeai";
+
+    fetch("/api/chat/set_history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_type,
+        senderId,
+        message,
+        message_type,
+      }),
+    });
+  };
+
+  const getChatHistory = async (chat_type: string) => {
+    try {
+      const response = await fetch("/api/chat/get_history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chat_type }),
+      });
+
+      const parsedData = await response.json();
+
+      return parsedData;
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      throw new Error("Failed to fetch chat history");
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
       const userInput = values.prompt;
+
+      addChatMessage("dummyUser", userInput, "text");
+
       const detailedPrompt = createPrompt(userInput);
   
       const userMessage: ChatCompletionMessageParam = {
@@ -184,7 +219,6 @@ const ContentGenerationPage = () => {
         const { done, value } = await reader.read();
         if (done) break;
         const decodedText = decoder.decode(value);
-        console.log(decodedText);
         
         if (decodedText.startsWith("data:")) {
           const contentMatch = decodedText.split("data:")[1];
@@ -192,13 +226,17 @@ const ContentGenerationPage = () => {
             const content = removeQuotes(contentMatch.match(urlRegex)?.[0] || "");
             console.log(content);
             if (imageUrlRegex.test(content)) {
-              setThumbnail(content);
+              setMedia((prev) => ({ ...prev, thumbnail: content }));
+              addChatMessage("dummyRobot", content, "thumbnail");
             } else if (speechUrlRegex.test(content)) {
-              setSpeech(content);
+              setMedia((prev) => ({ ...prev, speech: content }));
+              addChatMessage("dummyRobot", content, "speech");
             } else if (musicUrlRegex.test(content)) {
-              setMusic(content);
+              setMedia((prev) => ({ ...prev, music: content }));
+              addChatMessage("dummyRobot", content, "music");
             } else {
-              setScript(content);
+              setMedia((prev) => ({ ...prev, script: content }));
+              addChatMessage("dummyRobot", content, "script");
             }
           }
         } else {
@@ -209,6 +247,9 @@ const ContentGenerationPage = () => {
           ]);
         }
       }
+
+      addChatMessage("dummyRobot", accumulatedText, "text");
+    
     } catch (error: any) {
       console.log(error);
     } finally {
@@ -217,7 +258,58 @@ const ContentGenerationPage = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      const chatHistory = await getChatHistory("viralizeai");
+      console.log("Chat history fetched:", chatHistory);
   
+      if (chatHistory && chatHistory.messages) {
+        chatHistory.messages.forEach((msg: { sender_id: string; message: any; message_type: string }) => {  
+          switch (msg.message_type) {
+            case "text":
+              setMessages((current) => [
+                ...current,
+                {
+                  role: msg.sender_id === "dummyUser" ? "user" : "assistant",
+                  content: msg.message,
+                },
+              ]);
+              break;
+            case "speech":
+              setMedia((prev) => ({ ...prev, speech: msg.message }));
+              break;
+            case "thumbnail":
+              setMedia((prev) => ({ ...prev, thumbnail: msg.message }));
+              break;
+            case "music":
+              setMedia((prev) => ({ ...prev, music: msg.message }));
+              break;
+            case "script":
+              setMedia((prev) => ({ ...prev, script: msg.message }));
+              break;
+            default:
+              console.warn(`Unknown message type: ${msg.message_type}`);
+          }
+        });
+  
+      } else {
+        console.error("Chat history is null or messages are missing.");
+      }
+    };
+  
+    fetchChatHistory();
+  
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
   
 
   const renderMessageContent = (content: string) => {
@@ -259,7 +351,9 @@ const ContentGenerationPage = () => {
             />
           ),
           td: ({ node, ...props }) => (
-            <td {...props} className="border border-gray-200 px-4 py-2 break-words" />
+            <td
+              {...props}
+              className="border border-gray-200 px-4 py-2 break-words" />
           ),
           tr: ({ node, ...props }) => (
             <tr {...props} className="even:bg-pink-100" />
@@ -320,38 +414,38 @@ const ContentGenerationPage = () => {
               </div>
             ))}
           </div>
-          {script && (
+          {media.script && (
             <div>
               <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
                 Too Lazy to Record? Here is your generated script and voiceover!
               </h3>
-              <p>Here is your script: {script}</p>
+              <p>Here is your script: {media.script}</p>
             </div>
           )}
-          {speech && (
+          {media.speech && (
             <div>
               <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
                 Here is your generated voiceover for this video content!
               </h3>
               <audio controls className="w-full mt-8 p-1">
-                <source src={speech} type="audio/wav" />
+                <source src={media.speech} type="audio/wav" />
                 Your browser does not support the audio element.
               </audio>
             </div>
           )}
-          {music && (
+          {media.music && (
             <div className="space-y-4 mt-4">
               <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
                 Your Personalized Background Music for this video content is
                 generated!
               </h3>
               <audio controls className="w-full mt-8 p-1">
-                <source src={music} type="audio/mp3" />
+                <source src={media.music} type="audio/mp3" />
                 Your browser does not support the audio element.
               </audio>
             </div>
           )}
-          {thumbnail && (
+          {media.thumbnail && (
             <div className="space-y-4 mt-4">
               <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
                 Your Generated Thumbnail for this video content.
@@ -359,7 +453,7 @@ const ContentGenerationPage = () => {
               <Card className="rounded-lg overflow-hidden">
                 <div className="relative aspect-square">
                   <Image
-                    src={thumbnail}
+                    src={media.thumbnail}
                     alt="generated image"
                     width={500} // Adjust the width as necessary
                     height={500} // Adjust the height as necessary
@@ -369,7 +463,7 @@ const ContentGenerationPage = () => {
                 </div>
                 <CardFooter className="p-2">
                   <Button
-                    onClick={() => window.open(thumbnail)}
+                    onClick={() => media.thumbnail && window.open(media.thumbnail)}
                     variant="secondary"
                     className="w-full"
                   >

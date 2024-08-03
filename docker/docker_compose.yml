@@ -1,26 +1,20 @@
 services:
-  app:
-    build:
-      context: ../
-      dockerfile: Dockerfile
-    ports:
-      - '3000:3000'
-    depends_on:
-      - mongodb
-      - redis
-    environment:
-      MONGODB_URI: 'mongodb://admin:password@mongodb:27017/viralizeai'
-      REDIS_URL: 'redis://redis:6379'
-
-  worker:
-    build:
-      context: ../
-      dockerfile: Dockerfile
-    depends_on:
-      - rabbitmq
-    environment:
-      RABBITMQ_URI: 'amqp://rabbitmq:5672'
-    command: "npm run worker"
+  # app:
+  #   build:
+  #     context: ../
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - '3000:3000'
+  #   depends_on:
+  #     - mongodb
+  #     - rabbitmq
+  #     - redis
+  #   environment:
+  #     MONGODB_URI: 'mongodb://admin:password@localhost:27017/viralizeai'
+  #     RABBITMQ_URL: 'amqp://rabbitmq:5672'
+  #     REDIS_URL: 'redis://redis:6379'
+  #   volumes:
+  #     - ../:/app
 
   mongodb:
     image: mongo:latest

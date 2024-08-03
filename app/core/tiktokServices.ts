@@ -1,11 +1,27 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { sendToQueue } from "@/lib/rabbit";
+import { auth } from "@clerk/nextjs/server";
 
+interface TikTokUserInfo {
+    open_id: string;
+    union_id: string;
+    avatar_url: string;
+    avatar_url_100: string;
+    display_name: string;
+    bio_description: string;
+    profile_deep_link: string;
+    username: string;
+    follower_count: number;
+    following_count: number;
+    likes_count: number;
+    video_count: number;
+    is_verified: boolean;
+}
 
 class TikTokService {
     private userId: string;
 
-    constructor(userId: string ) {
+    constructor(userId: string) {
         this.userId = userId;
     }
 
@@ -17,18 +33,27 @@ class TikTokService {
         // Get the OAuth access token for the user
         const provider = "oauth_tiktok";
 
-        const clerkResponse = await clerkClient.users.getUserOauthAccessToken(
-            this.userId,
-            provider
-        );
+        try {
+            const clerkResponse = await clerkClient.users.getUserOauthAccessToken(
+                this.userId,
+                provider
+            );
 
-        const accessToken = clerkResponse.data[0].token;
-        return accessToken;
+            if (!clerkResponse.data || !clerkResponse.data.length) {
+                throw new Error("No access token found in Clerk response");
+            }
+
+            const accessToken = clerkResponse.data[0].token;
+            return accessToken;
+        } catch (error) {
+            console.error("Error fetching Clerk Token:", error);
+            throw error;
+        }
     }
 
-    async getUserInfo(): Promise<object> {
+    async getUserInfo(): Promise<TikTokUserInfo> {
         try {
-            const accessToken = this.getUserAccessToken();
+            const accessToken = await this.getUserAccessToken();
 
             const ttUserInfoBaseUrl = `https://open.tiktokapis.com/v2/user/info/`;
 
@@ -48,25 +73,28 @@ class TikTokService {
             });
 
             if (!tiktokResponse.ok) {
+                console.error("TikTok API response error:", tiktokResponse.statusText);
                 throw new Error("Failed to fetch data from TikTok API");
             }
 
             const tiktokData = await tiktokResponse.json();
+            const tiktokDataBody = tiktokData.data.user
+            return tiktokDataBody as TikTokUserInfo;
 
-            return tiktokData;
         } catch (error) {
-            return { message: error }
+            console.error("Error fetching TikTok user info:", error);
+            throw new Error(String(error));
         }
     }
 
     async getUserVideoTags(): Promise<object> {
         try {
-            const accessToken = this.getUserAccessToken();
-            
+            const accessToken = await this.getUserAccessToken();
             sendToQueue('videoTags', { accessToken: accessToken });
 
             return { message: "Video tags processing" };
         } catch (error) {
+            console.error("Error sending video tags to queue:", error);
             return { message: error }
         }
     }

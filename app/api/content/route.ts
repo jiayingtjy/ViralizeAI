@@ -1,11 +1,11 @@
 // Use getAuth for server-side
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import OpenAIService from "@/app/core/openAIService";
 
 // Define the POST request handler for the API route
 export async function POST(req: Request) {
   try {
+    // Get the authenticated user ID
     const body = await req.json();
     const { messages } = body;
 
@@ -16,12 +16,13 @@ export async function POST(req: Request) {
     const oAIService = OpenAIService.getInstance(process.env.OPENAI_API_KEY);
     const response = await oAIService.generateTextStream(messages);
     const encoder = new TextEncoder();
+    let responseText = "";
     const stream = new ReadableStream({
       async start(controller) {
         for await (const chunk of response) {
-          controller.enqueue(
-            encoder.encode(chunk.choices[0]?.delta?.content || "")
-          );
+          const content = chunk.choices[0]?.delta?.content || '';
+          responseText += content; // Collect data from the stream
+          controller.enqueue(encoder.encode(content));
         }
         controller.close();
       },

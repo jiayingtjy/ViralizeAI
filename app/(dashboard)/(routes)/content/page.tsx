@@ -88,10 +88,54 @@ const ContentGenerationPage = () => {
     return detailedPrompt;
   };
 
+  const addChatMessage = (
+    senderId: string,
+    message: string,
+    message_type: string
+  ) => {
+    // convert chatId to hex string
+    const chat_type = "content";
+
+    fetch("/api/chat/set_history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_type,
+        senderId,
+        message,
+        message_type,
+      }),
+    });
+  };
+
+  const getChatHistory = async (chat_type: string) => {
+    try {
+      const response = await fetch("/api/chat/get_history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chat_type }),
+      });
+
+      const parsedData = await response.json();
+
+      return parsedData;
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      throw new Error("Failed to fetch chat history");
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
       const userInput = values.prompt;
+
+      addChatMessage("dummyUser", userInput, "text");
+
       const detailedPrompt = createPrompt(userInput);
 
       const userMessage: ChatCompletionMessageParam = {
@@ -115,7 +159,9 @@ const ContentGenerationPage = () => {
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      if (!response.body) throw new Error("No response body");
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to generate content");
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -130,6 +176,8 @@ const ContentGenerationPage = () => {
           { role: "assistant", content: accumulatedText },
         ]);
       }
+
+      addChatMessage("dummyRobot", accumulatedText, "text");
     } catch (error) {
       console.error(error);
     } finally {
@@ -138,6 +186,36 @@ const ContentGenerationPage = () => {
       form.setValue("prompt", "");
     }
   };
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const chatHistory = await getChatHistory("content");
+        console.log("Chat history fetched:", chatHistory);
+        if (chatHistory && chatHistory.messages) {
+          setMessages(
+            chatHistory.messages.map(
+              (msg: { sender_id: string; message: any }) => ({
+                role: msg.sender_id === "dummyUser" ? "user" : "assistant",
+                content: msg.message,
+              })
+            )
+          );
+        } else {
+          console.error("Chat history is null or messages are missing.");
+        }
+      } catch (error) {
+        console.error("Error fetching chat history:", error);
+      }
+    };
+
+    fetchChatHistory();
+
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
