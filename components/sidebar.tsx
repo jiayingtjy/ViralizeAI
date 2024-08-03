@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Montserrat } from "next/font/google";
 
 import { cn } from "@/lib/utils";
-import { ScrollIcon, Music, House,Camera,List,Settings, Youtube, MessageCircleMoreIcon, AreaChart,MessageCircleQuestionIcon, ImageIcon, Video, User, TerminalSquare, Scale, Handshake, Users} from "lucide-react";
+import { ScrollIcon, Music, House,Camera,List, Youtube, MessageCircleMoreIcon, AreaChart,MessageCircleQuestionIcon, ImageIcon, Video, User, TerminalSquare, Scale, Handshake, Users} from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const montserrat = Montserrat({weight:"600", subsets:["latin"]});
@@ -56,11 +56,6 @@ const routes = [
         icon: Youtube,
         href:"/viralizeai",
         color:"text-pink-500"
-    },{
-        label:"Settings",
-        icon: Settings,
-        href:"/dashboard",
-        color:"text-white-500"
     },
     {
         label:"About Us",
@@ -96,8 +91,6 @@ const Sidebar = () =>{
                          A Smarter Tiktok Studio
                     </p>
                     </h1>
-                    
-                    
                 </Link>
                 <div className = "space-y-1">
                     {routes.map((route) => (

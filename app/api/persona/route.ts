@@ -16,10 +16,9 @@ export async function GET() {
         // Connect to MongoDB
         await dbConnect();
         // Check if the user already exists in MongoDB
-        let userPersona = await Persona.findOne({ userId });
+        let userPersona = await Persona.findOne({ user_id: userId });
         // If the user does not exist, fetch from TikTok API and save it to MongoDB
         if (!userPersona) {
-            console.log("here");
             const ttService = new TikTokService(userId);
             const userInfo = await ttService.getUserInfo();
             userPersona = new Persona({
