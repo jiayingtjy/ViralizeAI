@@ -54,7 +54,7 @@ const ImageGenerationPage = () => {
       form.reset();
     } catch (error: any) {
       // Handle errors
-      console.log(error);
+      console.error(error);
     } finally {
       router.refresh();
     }

@@ -8,7 +8,6 @@ async function addChatMessage(chat_type: string, senderId: string, message: stri
     const chatHistory = await ChatHistory.findOne({ chat_type });
 
     if (chatHistory) {
-        console.log("Chat history found:", chatHistory);
         // Add the new message to the chat history
         chatHistory.messages.push({ sender_id: senderId, message: message, message_type: message_type });
         await chatHistory.save();
@@ -19,7 +18,6 @@ async function addChatMessage(chat_type: string, senderId: string, message: stri
             participants: ['dummyUser', 'dummyRobot'],
             messages: [{ sender_id: senderId, message: message, message_type: message_type }]
         });
-        console.log("New chat history created:", newChatHistory);
         await newChatHistory.save();
     }
 }

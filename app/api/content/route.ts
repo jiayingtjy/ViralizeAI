@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.log("[CONVERSATION_ERROR]", error);
+    console.error(error);
     return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }

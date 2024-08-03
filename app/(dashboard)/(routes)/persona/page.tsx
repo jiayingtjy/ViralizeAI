@@ -63,9 +63,7 @@ const PersonaPage = () => {
       }
 
       const responseJson = await response.json();
-
-      console.log("API Response: ", responseJson);
-
+      
       // Adding the response data to the personaData array correctly
       setPersonaData((current) => [...current, userMessage]);
 

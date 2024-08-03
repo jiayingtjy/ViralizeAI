@@ -224,7 +224,6 @@ const ContentGenerationPage = () => {
           const contentMatch = decodedText.split("data:")[1];
           if (contentMatch) {
             const content = removeQuotes(contentMatch.match(urlRegex)?.[0] || "");
-            console.log(content);
             if (imageUrlRegex.test(content)) {
               setMedia((prev) => ({ ...prev, thumbnail: content }));
               addChatMessage("dummyRobot", content, "thumbnail");
@@ -251,7 +250,7 @@ const ContentGenerationPage = () => {
       addChatMessage("dummyRobot", accumulatedText, "text");
     
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
     } finally {
       router.refresh();
       form.reset();
@@ -262,7 +261,6 @@ const ContentGenerationPage = () => {
   useEffect(() => {
     const fetchChatHistory = async () => {
       const chatHistory = await getChatHistory("viralizeai");
-      console.log("Chat history fetched:", chatHistory);
   
       if (chatHistory && chatHistory.messages) {
         chatHistory.messages.forEach((msg: { sender_id: string; message: any; message_type: string }) => {  

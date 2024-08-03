@@ -191,7 +191,6 @@ const ContentGenerationPage = () => {
     const fetchChatHistory = async () => {
       try {
         const chatHistory = await getChatHistory("content");
-        console.log("Chat history fetched:", chatHistory);
         if (chatHistory && chatHistory.messages) {
           setMessages(
             chatHistory.messages.map(

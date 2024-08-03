@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
         return new NextResponse("Message added successfully", { status: 200 });
     } catch (error) {
-        console.log("[CHAT_ERROR]", error);
+        console.error(error);
         return new NextResponse(`Internal error ${error}`, { status: 500 });
     }
 }

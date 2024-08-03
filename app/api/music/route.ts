@@ -13,13 +13,11 @@ export async function POST(req: Request) {
 
     // If there is no user ID, return early
     if (!userId) {
-      console.log("no userid?")
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     //if no messages passed in 
     if (!prompt) {
-      console.log("no prompt?")
       return new NextResponse("Prompt is required", { status: 400 });
     }
 
@@ -34,8 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json(response);
   } catch (error) {
     // Log the error and return a 500 Internal Server Error response
-
-    console.log("[MUSIC_ERROR]", error);
+    console.error(error);
     return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }

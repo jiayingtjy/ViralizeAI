@@ -14,13 +14,11 @@ export async function POST(req: Request) {
 
     // If there is no user ID, return early
     if (!userId) {
-      console.log("no userid?")
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     //if no messages passed in 
     if (!prompt || !amount || !resolution) {
-      console.log("no msg?")
       return new NextResponse("Prompt, amount, or resolution is missing", { status: 400 });
     }
     
@@ -30,7 +28,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     // Log the error and return a 500 Internal Server Error response
-    console.log("[IMAGE_ERROR]", error);
+    console.error(error);
     return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
 
 interface PersonaData {
   avatar_url_100: string;
@@ -21,28 +21,28 @@ const DashboardPage = () => {
   const router = useRouter();
   const [personaData, setPersonaData] = useState<PersonaData | null>(null);
 
-  useEffect(() => {
-    const fetchPersonaData = async () => {
-      try {
-        const response = await fetch("/api/persona", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+  const fetchPersonaData = async (queryParams = {}) => {
+    try {
+      const queryString = new URLSearchParams(queryParams).toString();
+      const response = await fetch(`/api/persona?${queryString}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch data from TikTok API");
-        }
-
-        const responseJson: PersonaData = await response.json();
-        console.log("API Response: ", responseJson);
-        setPersonaData(responseJson);
-      } catch (error) {
-        console.error("Error fetching persona data:", error);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data from TikTok API");
       }
-    };
 
+      const responseJson: PersonaData = await response.json();
+      setPersonaData(responseJson);
+    } catch (error) {
+      console.error("Error fetching persona data:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchPersonaData();
   }, []);
 
@@ -60,15 +60,22 @@ const DashboardPage = () => {
         </p>
         {personaData && (
           <>
-            <section className="py-10">
+            <section className="py-10 relative">
               <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div
-                  className="shadow-lg rounded-2xl py-10 px-10 xl:py-16 xl:px-20 bg-gray-50 flex items-center justify-between flex-col gap-16 lg:flex-row"
-                >
+                <div className="shadow-lg rounded-2xl py-10 px-10 xl:py-16 xl:px-20 bg-gray-50 flex items-center justify-between flex-col gap-16 lg:flex-row relative">
+                  <button
+                    onClick={() => fetchPersonaData({ updateUserInfo: true })}
+                    className="absolute top-4 right-4 flex items-center gap-x-2 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Refresh
+                  </button>
                   <div className="w-full lg:w-60 flex flex-col items-center lg:items-start">
-                    <h2 className="font-manrope text-4xl font-bold text-gray-900 mb-4 text-center lg:text-left">
-                      {personaData.username}
-                    </h2>
+                    <div className="flex items-center justify-center lg:justify-start gap-2 mb-4">
+                      <h2 className="font-manrope text-4xl font-bold text-gray-900 text-center lg:text-left">
+                        {personaData.username}
+                      </h2>
+                    </div>
                     <Image
                       className="w-32 h-32 bg-gray-300 rounded-full mb-4"
                       src={personaData.avatar_url_100}
