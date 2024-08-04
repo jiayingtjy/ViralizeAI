@@ -77,6 +77,22 @@ class ReplicateServices {
             throw new Error(`Failed to run model: ${error}`);
         }
     }
+
+    async videoTagger(video_path: string, text_prompt: string): Promise<any> {
+        try {
+            return await this.replicate.run(
+                "nateraw/video-llava:26387f81b9417278a8578188a31cd763eb3a55ca0f3ec375bf69c713de3fb4e8",
+                {
+                    input: {
+                        video_path,
+                        text_prompt
+                    }
+                }
+            );
+        } catch (error) {
+            throw new Error(`Failed to run model: ${error}`);
+        }
+    }
 }
 
 export default ReplicateServices;

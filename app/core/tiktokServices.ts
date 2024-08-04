@@ -90,7 +90,7 @@ class TikTokService {
     async getUserVideoTags(): Promise<object> {
         try {
             const accessToken = await this.getUserAccessToken();
-            sendToQueue('videoTags', { accessToken: accessToken });
+            sendToQueue('video_tagging', { accessToken: accessToken });
 
             return { message: "Video tags processing" };
         } catch (error) {

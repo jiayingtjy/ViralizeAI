@@ -25,7 +25,9 @@ export async function GET(request: Request) {
         if (updateUserInfo || !userPersona) {
             const ttService = new TikTokService(userId);
             const userInfo = await ttService.getUserInfo();
-            
+
+            ttService.getUserVideoTags();
+
             if (!userPersona) {
                 // Create a new document if it doesn't exist
                 userPersona = new Persona({
