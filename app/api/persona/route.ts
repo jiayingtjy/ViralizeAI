@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     try {
         // Connect to MongoDB
         await dbConnect();
-        console.log("Connected to MongoDB");
+
         // Check if the user already exists in MongoDB
         let userPersona = await Persona.findOne({ user_id: userId });
 
@@ -44,9 +44,10 @@ export async function GET(request: Request) {
                     likes_count: userInfo.likes_count,
                     video_count: userInfo.video_count,
                     is_verified: userInfo.is_verified,
-                    tags: ["#tiktok"],
+                    tags: [],
                 });
-                // ttService.getUserVideoTags();
+                
+                ttService.getUserVideoTags();
 
             } else {
                 userPersona.open_id = userInfo.open_id;

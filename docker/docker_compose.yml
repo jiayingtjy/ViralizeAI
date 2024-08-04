@@ -12,7 +12,7 @@ services:
       - rabbitmq
       - redis
     environment:
-      MONGODB_URI: mongodb://admin:password@mongodb:27017/viralizeai
+      MONGODB_URI: mongodb://mongodb:27017/viralizeai
       RABBITMQ_URL: amqp://user:password@rabbitmq:5672
       REDIS_URL: redis://redis:6379
 
