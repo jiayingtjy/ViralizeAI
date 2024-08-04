@@ -4,9 +4,9 @@ services:
       context: ../
       dockerfile: Dockerfile
     volumes:
-      - ../:/app
+      - ../supervisord.log:/app/supervisord.log
     ports:
-      - 3000:3000
+      - "3000:3000"
     depends_on:
       - mongodb
       - rabbitmq
@@ -23,7 +23,7 @@ services:
       MONGODB_INITDB_ROOT_PASSWORD: password
       MONGODB_INITDB_DATABASE: viralizeai
     ports:
-      - 27017:27017
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
       - ./init-mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
@@ -40,7 +40,7 @@ services:
   redis:
     image: redis:latest
     ports:
-      - 6379:6379
+      - "6379:6379"
 
 volumes:
   mongo_data:

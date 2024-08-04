@@ -84,7 +84,7 @@ const DashboardPage = () => {
                       height={100}
                     />
                     <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                      {personaData.tags.map((tag, index) => (
+                      {personaData.tags && personaData.tags.map((tag, index) => (
                         <span
                           key={index}
                           className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full"
@@ -96,7 +96,7 @@ const DashboardPage = () => {
                   </div>
                   <div className="w-full lg:w-4/5">
                     <div className="flex flex-col flex-1 gap-10 lg:gap-0 lg:flex-row lg:justify-between">
-                      {[personaData.likes_count,
+                      {personaData && [personaData.likes_count,
                         personaData.follower_count,
                         personaData.following_count].map((stat, index) => (
                         <div key={index} className="block">
