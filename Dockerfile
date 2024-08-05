@@ -4,23 +4,24 @@ FROM node:20
 # Set the working directory in the container
 WORKDIR /app
 
-# Install supervisor
-RUN apt-get update && apt-get install -y supervisor
+# Install supervisor and clean up apt cache
+RUN apt-get update && \
+    apt-get install -y supervisor && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy package.json and package-lock.json to the working directory
+# Copy package.json and package-lock.json to the working directory and install dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
 # Install TypeScript globally
 RUN npm install -g typescript
 
 # Copy the rest of the application code to the working directory
-COPY . /app
+COPY . .
 
 # Build the Next.js application
-RUN npm run build
+# RUN npm run build
 
 # Compile TypeScript files
 RUN npx tsc
