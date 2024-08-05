@@ -5,8 +5,6 @@ services:
     build:
       context: ../
       dockerfile: Dockerfile
-    volumes:
-      - ../supervisord.log:/app/supervisord.log
     ports:
       - "3000:3000"
     depends_on:
