@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   app:
     build:
@@ -27,6 +29,11 @@ services:
     volumes:
       - mongo_data:/data/db
       - ./init-mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management

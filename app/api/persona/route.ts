@@ -46,9 +46,6 @@ export async function GET(request: Request) {
                     is_verified: userInfo.is_verified,
                     tags: [],
                 });
-                
-                // async generate and save user video tags
-                ttService.getUserVideoTags();
 
             } else {
                 userPersona.open_id = userInfo.open_id;
@@ -67,6 +64,9 @@ export async function GET(request: Request) {
             }
 
             await userPersona.save();
+
+            ttService.generateUserVideoTags(userId);
+
         }
 
         return NextResponse.json(userPersona);
