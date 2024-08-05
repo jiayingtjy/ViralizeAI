@@ -1,6 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { sendToQueue } from "@/lib/rabbit";
-import { auth } from "@clerk/nextjs/server";
 
 interface TikTokUserInfo {
     open_id: string;

@@ -47,6 +47,7 @@ export async function GET(request: Request) {
                     tags: [],
                 });
                 
+                // async generate and save user video tags
                 ttService.getUserVideoTags();
 
             } else {
