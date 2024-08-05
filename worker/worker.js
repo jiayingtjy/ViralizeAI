@@ -42,13 +42,13 @@ async function processMessage(msg) {
       } else {
         console.error("User persona not found");
       }
-      console.log("User Persona:", userPersona);
+      console.log("Job completed:", messageContent);
+
     } catch (error) {
       console.error("Error fetching user persona:", error);
+      console.error("Job Failed:");
+
     }
-
-    console.log("Job completed:", messageContent);
-
     if (channel) {
       channel.ack(msg);
     }
