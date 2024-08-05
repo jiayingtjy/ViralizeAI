@@ -20,7 +20,7 @@ RUN npm install -g typescript
 COPY . /app
 
 # Build the Next.js application
-# RUN npm run build
+RUN npm run build
 
 # Compile TypeScript files
 RUN npx tsc
