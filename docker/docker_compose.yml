@@ -1,18 +1,18 @@
 services:
-  app:
-    build:
-      context: ../
-      dockerfile: Dockerfile
-    ports:
-      - "80:3000"
-    depends_on:
-      - mongodb
-      - rabbitmq
-      - redis
-    environment:
-      MONGODB_URI: mongodb://mongodb:27017/viralizeai
-      RABBITMQ_URL: amqp://user:password@172.31.45.161:5672
-      REDIS_URL: redis://redis:6379
+  # app:
+  #   build:
+  #     context: ../
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "80:3000"
+  #   depends_on:
+  #     - mongodb
+  #     - rabbitmq
+  #     - redis
+  #   environment:
+  #     MONGODB_URI: mongodb://mongodb:27017/viralizeai
+  #     RABBITMQ_URL: amqp://user:password@172.31.45.161:5672
+  #     REDIS_URL: redis://redis:6379
 
   mongodb:
     image: mongo:latest
