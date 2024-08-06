@@ -86,14 +86,8 @@ const ContentGenerationPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
+      const userInput = values.prompt;
       const videoFile = values.video;
-      const userInput =
-        values.prompt +
-        `\n Selected Video: ${videoFile?.name} (${(
-          videoFile?.size /
-          1024 /
-          1024
-        ).toFixed(2)} MB)`;
 
       // Add user input message
       const userMessage: ChatCompletionMessageParam = {
@@ -101,57 +95,64 @@ const ContentGenerationPage = () => {
         content: userInput,
       };
 
-      setMessages((current) => [...current, userMessage]);
+      // Add video details message
+      const videoMessage: ChatCompletionMessageParam = {
+        role: "user",
+        content: videoFile
+          ? `Selected Video: ${videoFile.name} (${(
+              videoFile.size /
+              1024 /
+              1024
+            ).toFixed(2)} MB)`
+          : "No video file selected",
+      };
 
-      addChatMessage("dummyUser", userInput, "text");
+      setMessages((current) => [...current, userMessage, videoMessage]);
 
       // Simulate loading time
-      await new Promise((resolve) => setTimeout(resolve, 8000));
-
-      const fakeResponse = `
-**Video Analysis Report**
-
-**Overall Score - 8.5/10**
-
-**1. Video Quality:**
-   - **Resolution:** 1080p HD
-   - **Frame Rate:** 30 fps
-   - **Overall Quality:** Excellent
-
-**2. Content Analysis:**
-   - **Hook:** The first 5 seconds grab attention with a bold, catchy statement. Great job on capturing the viewer's interest quickly.
-   - **Main Content:** The middle section is well-structured, providing valuable information with clear visuals and concise narration.
-   - **Ending:** The video ends with a strong call-to-action, encouraging viewers to like, comment, and subscribe.
-
-**3. Engagement Factors:**
-   - **Visuals:** High-quality visuals and smooth transitions keep the audience engaged. Consider adding more dynamic elements like animations to enhance visual interest.
-   - **Audio:** Clear and crisp audio with appropriate background music. Ensure the background music volume is slightly lower to avoid overshadowing the narration.
-   - **Pacing:** The pacing is consistent and keeps the viewer's attention throughout. However, consider adding brief pauses to allow viewers to absorb the information better.
-
-**4. SEO and Social Media Optimization:**
-   - **Title and Description:** The video title is catchy and relevant. Ensure the description includes relevant keywords and a brief summary of the video content.
-   - **Tags:** Utilize more specific tags related to your niche to improve searchability.
-   - **Thumbnail:** The thumbnail is visually appealing and relevant to the video content. Consider using text overlays to highlight the main topic.
-
-**5. Overall Feedback:**
-   - The video is highly engaging and informative, making it likely to perform well on social media platforms. Keep up the good work on maintaining high production quality.
-   - For future videos, consider experimenting with different content formats and styles to keep your audience engaged.
-   - Engage with viewers in the comments section to build a community around your content.
-
-**Recommendations:**
-   - Continue producing high-quality content with a strong focus on engagement.
-   - Experiment with shorter video formats to cater to audiences with shorter attention spans.
-   - Use analytics to track performance and identify areas for improvement.`;
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Add assistant response message
       const assistantMessage: ChatCompletionMessageParam = {
         role: "assistant",
-        content: fakeResponse,
+        content: `
+          **Video Analysis Report**
+  
+          **1. Video Quality:**
+          - **Resolution:** 1080p HD
+          - **Frame Rate:** 30 fps
+          - **Overall Quality:** Excellent
+  
+          **2. Content Analysis:**
+          - **Hook:** The first 5 seconds grab attention with a bold, catchy statement. Great job on capturing the viewer's interest quickly.
+          - **Main Content:** The middle section is well-structured, providing valuable information with clear visuals and concise narration.
+          - **Ending:** The video ends with a strong call-to-action, encouraging viewers to like, comment, and subscribe.
+  
+          **3. Engagement Factors:**
+          - **Visuals:** High-quality visuals and smooth transitions keep the audience engaged. Consider adding more dynamic elements like animations to enhance visual interest.
+          - **Audio:** Clear and crisp audio with appropriate background music. Ensure the background music volume is slightly lower to avoid overshadowing the narration.
+          - **Pacing:** The pacing is consistent and keeps the viewer's attention throughout. However, consider adding brief pauses to allow viewers to absorb the information better.
+  
+          **4. SEO and Social Media Optimization:**
+          - **Title and Description:** The video title is catchy and relevant. Ensure the description includes relevant keywords and a brief summary of the video content.
+          - **Tags:** Utilize more specific tags related to your niche to improve searchability.
+          - **Thumbnail:** The thumbnail is visually appealing and relevant to the video content. Consider using text overlays to highlight the main topic.
+  
+          **5. Overall Feedback:**
+          - The video is highly engaging and informative, making it likely to perform well on social media platforms. Keep up the good work on maintaining high production quality.
+          - For future videos, consider experimenting with different content formats and styles to keep your audience engaged.
+          - Engage with viewers in the comments section to build a community around your content.
+  
+          **Recommendations:**
+          - Continue producing high-quality content with a strong focus on engagement.
+          - Experiment with shorter video formats to cater to audiences with shorter attention spans.
+          - Use analytics to track performance and identify areas for improvement.
+        `,
       };
 
       setMessages((current) => [...current, assistantMessage]);
 
-      addChatMessage("dummyRobot", fakeResponse, "text");
+      addChatMessage("dummyRobot", assistantMessage.content, "text");
     } catch (error) {
       console.error(error);
     } finally {
