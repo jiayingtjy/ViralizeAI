@@ -362,7 +362,9 @@ const ContentGenerationPage = () => {
                   <p className="text-gray-700">Selected Video:</p>
                   <p className="text-gray-500">{videoFile.name}</p>
                   <p className="text-gray-500">
-                    {(videoFile.size / 1024 / 1024).toFixed(2)} MB
+                    {videoFile.size &&
+                      (videoFile.size / 1024 / 1024).toFixed(2)}{" "}
+                    MB
                   </p>
                   <Button className="mt-2" onClick={() => setVideoFile(null)}>
                     Change Video
