@@ -30,7 +30,7 @@ async function processMessage(msg) {
     console.log("Processing job:", messageContent);
 
     // Mock the tags generated
-    const tags = ["Singapore", "Student", "IT", "Comedy"];
+    const tags = ["Singapore", "Student", "Sports", "Fashion", "MuayThai"];
 
     try {
       const userPersona = await Persona.findOne({
@@ -43,11 +43,9 @@ async function processMessage(msg) {
         console.error("User persona not found");
       }
       console.log("Job completed:", messageContent);
-
     } catch (error) {
       console.error("Error fetching user persona:", error);
       console.error("Job Failed:");
-
     }
     if (channel) {
       channel.ack(msg);
