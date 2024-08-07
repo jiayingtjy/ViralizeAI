@@ -4,6 +4,7 @@ const nextConfig = {
         domains: [
             "oaidalleapiprodscus.blob.core.windows.net",
             "replicate.delivery",
+            'p16-sign-sg.tiktokcdn.com',
         ],
     },
 };

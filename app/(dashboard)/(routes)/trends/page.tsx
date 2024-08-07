@@ -33,11 +33,9 @@ const TrendsPage = () => {
         messages: newTrends,
       });
 
-      console.log(response);
-
       setTrendData((current) => [...current, response.data]);
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
     } finally {
       setIsLoading(false);
       router.refresh();

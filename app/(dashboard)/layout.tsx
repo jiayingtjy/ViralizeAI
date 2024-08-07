@@ -14,7 +14,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <Sidebar />
       </div>
       <main className="md:pl-72">
-        <Navbar />
         {children}
       </main>
     </div>

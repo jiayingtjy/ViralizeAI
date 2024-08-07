@@ -42,28 +42,39 @@ const PersonaPage = () => {
     setIsLoading(true);
     try {
       const userInput = values.prompt;
-      const detailedPrompt = createPersonaAnalysisPrompt(userInput);
+      const detailedPrompt: string = createPersonaAnalysisPrompt(userInput);
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
         content: detailedPrompt,
       };
 
-      console.log("Prompt: ", detailedPrompt);
       const newPersonaData = [...personaData, userMessage];
-      const response = await axios.post("/api/content", {
-        messages: newPersonaData
+
+      const response = await fetch("/api/persona", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        }
       });
 
-      console.log("API Response: ", response);
-      setPersonaData((current) => [...current, response.data]);
+      if (!response.ok) {
+        console.error("Failed to fetch data from TikTok API");
+        return;
+      }
+
+      const responseJson = await response.json();
+      
+      // Adding the response data to the personaData array correctly
+      setPersonaData((current) => [...current, userMessage]);
+
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error: ", error);
     } finally {
       setIsLoading(false);
       router.refresh();
     }
-  };
+};
 
   // Generate prompt
   const createPersonaAnalysisPrompt = (userInput: string) => {
