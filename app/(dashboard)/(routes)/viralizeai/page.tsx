@@ -5,15 +5,12 @@ import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
 import { Download, MessageSquare, Youtube } from "lucide-react";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 import { useRouter } from "next/navigation";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { useState, useEffect, useRef } from "react";
@@ -22,23 +19,23 @@ import { Loader } from "@/components/loader";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
-
-import PersonaPage from "../persona/page";
-import TrendsPage from "../trends/page";
 import { Card, CardFooter } from "@/components/ui/card";
 import Image from "next/image";
-import { set } from "mongoose";
 
 const ContentGenerationPage = () => {
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
+  const [conversations, setConversations] = useState<
+    [
+      ChatCompletionMessageParam,
+      {
+        script: string | null;
+        speech: string | null;
+        music: string | null;
+        thumbnail: string | null;
+      }
+    ][]
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [media, setMedia] = useState<{ script: string | null; speech: string | null; music: string | null; thumbnail: string | null }>({
-    script: null,
-    speech: null,
-    music: null,
-    thumbnail: null
-  });
   const [isButtonVisible, setIsButtonVisible] = useState(true);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -120,25 +117,27 @@ const ContentGenerationPage = () => {
       **4. Call-to-Action (CTA):**
       - "[Generated CTA]"
   
-      **Detailed Script with Timestamp and Shot Descriptions**
-  
-      | Timestamp | Screen Content | Script |
-      |-----------|----------------|--------|
-      | [Timestamp] | [Screen Content] | [Script] |
-  
       **5. Background Music:**
       "[Generate a suitable background music for the generated video idea.]"
   
       **6. Thumbnail Image:**
       "[Generate a suitable thumbnail image for this video content, idea, and the product being promoted. If it is a product or service, you can add a discount of 75% in the image to promote it as an advertisement.]"
 
-      **7. Full Script for the video content**
-      "[Generate a interesting, captivating script for the whole duration of the video. The script should be concise and less than or equal to 150 words.]"
+      **7. Detailed Script with Timestamp and Shot Descriptions**
+
+      | Timestamp | Screen Content                   | Lines                                           |
+      |-----------|----------------------------------|-------------------------------------------------|
+      | [Generated Timestamp] | [Generated Screen Content] | [Generated Lines] |
+
       `;
     return detailedPrompt;
   };
 
-  const addChatMessage = (senderId: string, message: string, message_type: string) => {
+  const addChatMessage = (
+    senderId: string,
+    message: string,
+    message_type: string
+  ) => {
     const chat_type = "viralizeai";
 
     fetch("/api/chat/set_history", {
@@ -182,20 +181,33 @@ const ContentGenerationPage = () => {
       addChatMessage("dummyUser", userInput, "text");
 
       const detailedPrompt = createPrompt(userInput);
-  
+
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
         content: userInput,
       };
-  
-      setMessages((current) => [...current, userMessage]);
-  
+
+      const newConversation: [
+        ChatCompletionMessageParam,
+        {
+          script: string | null;
+          speech: string | null;
+          music: string | null;
+          thumbnail: string | null;
+        }
+      ] = [
+        userMessage,
+        { script: null, speech: null, music: null, thumbnail: null },
+      ];
+
+      setConversations((current) => [...current, newConversation]);
+
       const newMessages = [
-        ...messages,
+        ...conversations.flatMap(([message]) => message),
         userMessage,
         { role: "user", content: detailedPrompt },
       ];
-  
+
       const response = await fetch("/api/viralizeai", {
         method: "POST",
         headers: {
@@ -203,52 +215,78 @@ const ContentGenerationPage = () => {
         },
         body: JSON.stringify({ messages: newMessages }),
       });
-  
+
       if (!response.body) throw new Error("No response body");
-  
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let accumulatedText = "";
-      const removeQuotes = (str: string) => str.replace(/^"|"$/g, '').replace(/\\+$/, ''); // Updated to remove trailing quotes and backslashes
+      const removeQuotes = (str: string) =>
+        str.replace(/^"|"$/g, "").replace(/\\+$/, ""); // Updated to remove trailing quotes and backslashes
       const urlRegex = /(https?:\/\/[^\s]+)/g; // Regex to match URLs
       const imageUrlRegex = /\.(jpeg|jpg|gif|png|svg)$/i;
       const musicUrlRegex = /\.(mp3)$/i;
       const speechUrlRegex = /\.(wav)$/i;
-  
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const decodedText = decoder.decode(value);
-        
+
         if (decodedText.startsWith("data:")) {
           const contentMatch = decodedText.split("data:")[1];
           if (contentMatch) {
-            const content = removeQuotes(contentMatch.match(urlRegex)?.[0] || "");
+            const content = removeQuotes(
+              contentMatch.match(urlRegex)?.[0] || ""
+            );
             if (imageUrlRegex.test(content)) {
-              setMedia((prev) => ({ ...prev, thumbnail: content }));
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].thumbnail =
+                  content;
+                return newConversations;
+              });
               addChatMessage("dummyRobot", content, "thumbnail");
             } else if (speechUrlRegex.test(content)) {
-              setMedia((prev) => ({ ...prev, speech: content }));
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].speech =
+                  content;
+                return newConversations;
+              });
               addChatMessage("dummyRobot", content, "speech");
             } else if (musicUrlRegex.test(content)) {
-              setMedia((prev) => ({ ...prev, music: content }));
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].music =
+                  content;
+                return newConversations;
+              });
               addChatMessage("dummyRobot", content, "music");
             } else {
-              setMedia((prev) => ({ ...prev, script: content }));
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].script =
+                  content;
+                return newConversations;
+              });
               addChatMessage("dummyRobot", content, "script");
             }
           }
         } else {
           accumulatedText += decodedText;
-          setMessages((current) => [
-            ...current.filter((msg) => msg.role !== "assistant"),
-            { role: "assistant", content: accumulatedText },
-          ]);
+          setConversations((prev) => {
+            const newConversations = [...prev];
+            newConversations[newConversations.length - 1][0] = {
+              role: "assistant",
+              content: accumulatedText,
+            };
+            return newConversations;
+          });
         }
       }
 
       addChatMessage("dummyRobot", accumulatedText, "text");
-    
     } catch (error: any) {
       console.error(error);
     } finally {
@@ -261,54 +299,73 @@ const ContentGenerationPage = () => {
   useEffect(() => {
     const fetchChatHistory = async () => {
       const chatHistory = await getChatHistory("viralizeai");
-  
+
       if (chatHistory && chatHistory.messages) {
-        chatHistory.messages.forEach((msg: { sender_id: string; message: any; message_type: string }) => {  
-          switch (msg.message_type) {
-            case "text":
-              setMessages((current) => [
-                ...current,
-                {
-                  role: msg.sender_id === "dummyUser" ? "user" : "assistant",
-                  content: msg.message,
-                },
-              ]);
-              break;
-            case "speech":
-              setMedia((prev) => ({ ...prev, speech: msg.message }));
-              break;
-            case "thumbnail":
-              setMedia((prev) => ({ ...prev, thumbnail: msg.message }));
-              break;
-            case "music":
-              setMedia((prev) => ({ ...prev, music: msg.message }));
-              break;
-            case "script":
-              setMedia((prev) => ({ ...prev, script: msg.message }));
-              break;
-            default:
-              console.warn(`Unknown message type: ${msg.message_type}`);
+        const parsedConversations: [
+          ChatCompletionMessageParam,
+          {
+            script: string | null;
+            speech: string | null;
+            music: string | null;
+            thumbnail: string | null;
           }
-        });
-  
+        ][] = [];
+
+        chatHistory.messages.forEach(
+          (msg: { sender_id: string; message: any; message_type: string }) => {
+            const message: ChatCompletionMessageParam = {
+              role: msg.sender_id === "dummyUser" ? "user" : "assistant",
+              content: msg.message,
+            };
+
+            const media = {
+              script: null,
+              speech: null,
+              music: null,
+              thumbnail: null,
+            };
+
+            switch (msg.message_type) {
+              case "speech":
+                media.speech = msg.message;
+                break;
+              case "thumbnail":
+                media.thumbnail = msg.message;
+                break;
+              case "music":
+                media.music = msg.message;
+                break;
+              case "script":
+                media.script = msg.message;
+                break;
+              default:
+                break;
+            }
+
+            parsedConversations.push([message, media]);
+          }
+        );
+
+        setConversations(parsedConversations);
       } else {
         console.error("Chat history is null or messages are missing.");
       }
     };
-  
+
     fetchChatHistory();
-  
+
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
-  
+  }, [conversations]);
 
   const renderMessageContent = (content: string) => {
     return (
@@ -351,7 +408,8 @@ const ContentGenerationPage = () => {
           td: ({ node, ...props }) => (
             <td
               {...props}
-              className="border border-gray-200 px-4 py-2 break-words" />
+              className="border border-gray-200 px-4 py-2 break-words"
+            />
           ),
           tr: ({ node, ...props }) => (
             <tr {...props} className="even:bg-pink-100" />
@@ -362,8 +420,6 @@ const ContentGenerationPage = () => {
       </ReactMarkdown>
     );
   };
-  
-  
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -387,91 +443,105 @@ const ContentGenerationPage = () => {
         ref={chatContainerRef}
       >
         <div className="space-y-4 mt-4">
-          {messages.length == 0 && !isLoading && (
+          {conversations.length == 0 && !isLoading && (
             <Empty label="No conversation started." />
           )}
           <div className="flex flex-col gap-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "p-8 w-full flex items-start gap-x-8 rounded-lg break-words",
-                  message.role === "user"
-                    ? "bg-white border border-black/10"
-                    : "bg-muted"
-                )}
-              >
-                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                {typeof message.content === "string" ? (
-                  <div className="whitespace-pre-wrap break-words w-full overflow-auto">
-                    {renderMessageContent(message.content)}
+            {conversations.map(([message, media], index) => (
+              <div key={index}>
+                <div
+                  className={cn(
+                    "p-8 flex flex-col gap-y-4 w-full rounded-lg break-words",
+                    message.role === "user"
+                      ? "bg-white border border-black/10"
+                      : "bg-muted"
+                  )}
+                >
+                  <div className="flex items-start gap-x-8">
+                    {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                    {typeof message.content === "string" ? (
+                      <div className="whitespace-pre-wrap break-words w-full overflow-auto">
+                        {renderMessageContent(message.content)}
+                      </div>
+                    ) : (
+                      "Invalid message content"
+                    )}
                   </div>
-                ) : (
-                  "Invalid message content"
-                )}
+                  <div className="flex flex-col gap-y-4 w-full">
+                    {media && (
+                      <>
+                        {media.script && (
+                          <div>
+                            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Too Lazy to Record? Here is your generated script
+                              and voiceover!
+                            </h3>
+                            <p>Here is your script: {media.script}</p>
+                          </div>
+                        )}
+                        {media.speech && (
+                          <div>
+                            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Here is your generated voiceover for this video
+                              content!
+                            </h3>
+                            <audio controls className="w-full mt-8 p-1">
+                              <source src={media.speech} type="audio/wav" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        )}
+                        {media.music && (
+                          <div>
+                            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Your Personalized Background Music for this video
+                              content is generated!
+                            </h3>
+                            <audio controls className="w-full mt-8 p-1">
+                              <source src={media.music} type="audio/mp3" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        )}
+                        {media.thumbnail && (
+                          <div>
+                            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Your Generated Thumbnail for this video content.
+                            </h3>
+                            <Card className="rounded-lg overflow-hidden">
+                              <div className="relative aspect-square">
+                                <Image
+                                  src={media.thumbnail}
+                                  alt="generated image"
+                                  width={500} // Adjust the width as necessary
+                                  height={500} // Adjust the height as necessary
+                                  layout="responsive" // Optional: To maintain the aspect ratio
+                                  objectFit="cover" // Optional: To define how the image should be resized
+                                />
+                              </div>
+                              <CardFooter className="p-2">
+                                <Button
+                                  onClick={() =>
+                                    media.thumbnail &&
+                                    window.open(media.thumbnail)
+                                  }
+                                  variant="secondary"
+                                  className="w-full"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </CardFooter>
+                            </Card>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-          {media.script && (
-            <div>
-              <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-                Too Lazy to Record? Here is your generated script and voiceover!
-              </h3>
-              <p>Here is your script: {media.script}</p>
-            </div>
-          )}
-          {media.speech && (
-            <div>
-              <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-                Here is your generated voiceover for this video content!
-              </h3>
-              <audio controls className="w-full mt-8 p-1">
-                <source src={media.speech} type="audio/wav" />
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
-          {media.music && (
-            <div className="space-y-4 mt-4">
-              <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-                Your Personalized Background Music for this video content is
-                generated!
-              </h3>
-              <audio controls className="w-full mt-8 p-1">
-                <source src={media.music} type="audio/mp3" />
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
-          {media.thumbnail && (
-            <div className="space-y-4 mt-4">
-              <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-                Your Generated Thumbnail for this video content.
-              </h3>
-              <Card className="rounded-lg overflow-hidden">
-                <div className="relative aspect-square">
-                  <Image
-                    src={media.thumbnail}
-                    alt="generated image"
-                    width={500} // Adjust the width as necessary
-                    height={500} // Adjust the height as necessary
-                    layout="responsive" // Optional: To maintain the aspect ratio
-                    objectFit="cover" // Optional: To define how the image should be resized
-                  />
-                </div>
-                <CardFooter className="p-2">
-                  <Button
-                    onClick={() => media.thumbnail && window.open(media.thumbnail)}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
       <div className="flex justify-center mb-8">
