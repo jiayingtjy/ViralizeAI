@@ -86,17 +86,19 @@ const ContentGenerationPage = () => {
       const videoFile = values.video;
 
       // Add user input message
-      const messageContent = userInput + (videoFile
-        ? `\n Selected Video: ${videoFile.name} (${(
-            videoFile.size /
-            1024 /
-            1024
-          ).toFixed(2)} MB)`
-        : "No video file selected");
+      const messageContent =
+        userInput +
+        (videoFile
+          ? `\n Selected Video: ${videoFile.name} (${(
+              videoFile.size /
+              1024 /
+              1024
+            ).toFixed(2)} MB)`
+          : "No video file selected");
 
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
-        content: messageContent
+        content: messageContent,
       };
 
       setMessages((current) => [...current, userMessage]);
@@ -111,6 +113,12 @@ const ContentGenerationPage = () => {
         role: "assistant",
         content: `
 **Video Analysis Report**
+
+**Related Tags**
+\#Fashion \#OOTD \#Joyful \#Excited \#Dance
+\#HappyVibes \#PositiveEnergy \#Trendy \#FashionInspo
+\#OutfitShowcase \#DanceMoves \#FeelGood \#MusicAndFashion
+
 
 **1. Video Quality:**
 - **Resolution:** 1080p HD
