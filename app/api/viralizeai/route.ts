@@ -68,7 +68,7 @@ export async function POST(req: Request) {
           encoder.encode(`data:${JSON.stringify(imageResponse[0])}\n\n`)
         );
 
-        const marker = "**7. Full Script for the video content**";
+        const marker = "**8. Full Script for the video content**";
         const parts = generatedContent.split(marker);
         const scriptContent =
           parts.length > 1 ? `Hi ${parts[1].trim()}` : "No Script available";

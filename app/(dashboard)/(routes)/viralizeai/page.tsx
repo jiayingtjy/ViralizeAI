@@ -124,11 +124,12 @@ const ContentGenerationPage = () => {
       "[Generate a suitable thumbnail image for this video content, idea, and the product being promoted. If it is a product or service, you can add a discount of 75% in the image to promote it as an advertisement.]"
 
       **7. Detailed Script with Timestamp and Shot Descriptions**
-
       | Timestamp | Screen Content                   | Lines                                           |
       |-----------|----------------------------------|-------------------------------------------------|
       | [Generated Timestamp] | [Generated Screen Content] | [Generated Lines] |
-
+      
+      **8. Full Script for the video content**
+      "[Generate a interesting, captivating script for the whole duration of the video. The script should be concise and less than or equal to 150 words.]"
       `;
     return detailedPrompt;
   };

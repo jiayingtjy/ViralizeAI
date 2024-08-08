@@ -66,7 +66,6 @@ export async function GET(request: Request) {
             await userPersona.save();
 
             ttService.generateUserVideoTags(userId);
-
         }
 
         return NextResponse.json(userPersona);
