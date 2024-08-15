@@ -1,55 +1,42 @@
- // Use getAuth for server-side
-import { auth } from "@clerk/nextjs/server";
+// Use getAuth for server-side
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import OpenAIService from "@/app/core/openAIService";
 
-// Configure the OpenAI API with the API key from environment variables
-const openai = new OpenAI({
-    apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
-  });
-  
-console.log(openai,"OPENAI OBJ")
 // Define the POST request handler for the API route
 export async function POST(req: Request) {
   try {
-    // Get the user ID from authentication
-    const userId = auth();
-    // Parse the request body to get the messages
+    // Get the authenticated user ID
     const body = await req.json();
     const { messages } = body;
 
-    // If there is no user ID, return early
-    if (!userId) {
-        console.log("no userid?")
-        return new NextResponse("Unauthorized", {status:401});
+    if (!messages) {
+      return new NextResponse("Messages are required", { status: 400 });
     }
 
-    //if no api key 
-    if(!openai.apiKey){
-        console.log("no key?")
-        return new NextResponse("OpenAI API Key is not configured", {status: 500});
-    }
-
-    
-
-    //if no messages passed in 
-    if(!messages){
-        console.log("no msg?")
-        return new NextResponse("Messages are required", {status: 400});
-    }
-
-    // Logic for processing the messages and interacting with OpenAI can go here
-    const response = await openai.chat.completions.create({
-        model:"gpt-3.5-turbo",
-        messages
+    const oAIService = OpenAIService.getInstance(process.env.OPENAI_API_KEY);
+    const response = await oAIService.generateTextStream(messages);
+    const encoder = new TextEncoder();
+    let responseText = "";
+    const stream = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of response) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          responseText += content; // Collect data from the stream
+          controller.enqueue(encoder.encode(content));
+        }
+        controller.close();
+      },
     });
 
-    return NextResponse.json(response.choices[0].message);
-
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
-    // Log the error and return a 500 Internal Server Error response
-    console.log("Final error")
-    console.log("[CONVERSATION_ERROR]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    console.error(error);
+    return new NextResponse(`Internal error ${error}`, { status: 500 });
   }
 }

@@ -41,7 +41,7 @@ const VideoGeneratorPage = () => {
       setVideo(response.data[0]); // Update the music state with the response URL
       form.reset();
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
     } finally {
       router.refresh();
     }

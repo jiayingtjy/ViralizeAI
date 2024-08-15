@@ -3,50 +3,61 @@
 import * as z from "zod";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
 import { Download, MessageSquare, Youtube } from "lucide-react";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 import { useRouter } from "next/navigation";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Empty } from "@/components/empty";
 import { Loader } from "@/components/loader";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
-
-import PersonaPage from "../persona/page";
-import TrendsPage from "../trends/page";
 import { Card, CardFooter } from "@/components/ui/card";
 import Image from "next/image";
 
 const ContentGenerationPage = () => {
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
-  const [messages2, setMessages2] = useState<ChatCompletionMessageParam[]>([]);
-  const [music, setMusic] = useState<string | null>(null);
-  const [script, setScript] = useState<string | null>(null);
-  const [speech, setSpeech] = useState<string | null>(null);
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<
+    [
+      ChatCompletionMessageParam,
+      {
+        script: string | null;
+        speech: string | null;
+        music: string | null;
+        thumbnail: string | null;
+      }
+    ][]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isButtonVisible, setIsButtonVisible] = useState(true);
 
-  // Initialize the form with validation schema and default values
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: ""
-    }
+      prompt: "",
+    },
   });
 
-  const isLoading = form.formState.isSubmitting;
+  const examplePrompts = [
+    "How do I promote my shirt for my brand? I am a small startup that sells aesthetic wear for sports.",
+    "What are some content ideas for my bakery's social media? We specialize in artisan breads and pastries.",
+    "How can I increase engagement for my online yoga classes on TikTok?",
+  ];
+
+  const handleExampleClick = (examplePrompt: string) => {
+    form.setValue("prompt", examplePrompt);
+    form.handleSubmit(onSubmit)();
+    setIsButtonVisible(false);
+  };
 
   const createPrompt = (userInput: string) => {
     const tiktokUserData = `TikTok User Data: 235 Following, 36 Followers, 0 Likes.`;
@@ -55,8 +66,9 @@ const ContentGenerationPage = () => {
       2. Title: @tiktok it’s your turn! ⚡️🙋🏿‍♂️ 🙌🏿😂 #tiktoklearnfromkhaby#learnfromkhaby, Description: Mimics Khaby Lame’s expressions and gestures. Likes: 24,400,000, Comments: 255,900, Shares: 94,000, Views: 190,800,000, Duration: 11 seconds, Share URL: https://www.tiktok.com/@khaby.lame/video/6965122051178892549?is_from_webapp=1&sender_device=pc&web_id=7384727992465901072`;
     const personaPrompt = `You are a TikTok social media strategist helping your client create the best TikTok content to drive traffic, engagement, and followers. You are innovative, creative, and experienced in generating viral content.`;
     const inferCategoryPrompt = `Infer the category the user is in based on their profile description.`;
-    const objective = "Increase reach, traffic, offline customers, and customer retention.";
-  
+    const objective =
+      "Increase reach, traffic, offline customers, and customer retention.";
+
     const detailedPrompt = `
       ${personaPrompt}
       Based on your client's background: ${tiktokUserData}, ${userInput}, ${inferCategoryPrompt}, and the following video data:
@@ -105,98 +117,304 @@ const ContentGenerationPage = () => {
       **4. Call-to-Action (CTA):**
       - "[Generated CTA]"
   
-      **Detailed Script with Timestamp and Shot Descriptions**
-  
-      | Timestamp | Screen Content | Script |
-      |-----------|----------------|--------|
-      | [Timestamp] | [Screen Content] | [Script] |
-  
       **5. Background Music:**
       "[Generate a suitable background music for the generated video idea.]"
   
       **6. Thumbnail Image:**
       "[Generate a suitable thumbnail image for this video content, idea, and the product being promoted. If it is a product or service, you can add a discount of 75% in the image to promote it as an advertisement.]"
 
-      **7. Full Script for the video content**
+      **7. Detailed Script with Timestamp and Shot Descriptions**
+      | Timestamp | Screen Content                   | Lines                                           |
+      |-----------|----------------------------------|-------------------------------------------------|
+      | [Generated Timestamp] | [Generated Screen Content] | [Generated Lines] |
+      
+      **8. Full Script for the video content**
       "[Generate a interesting, captivating script for the whole duration of the video. The script should be concise and less than or equal to 150 words.]"
-    
       `;
-  
     return detailedPrompt;
   };
-  
+
+  const addChatMessage = (
+    senderId: string,
+    message: string,
+    message_type: string
+  ) => {
+    const chat_type = "viralizeai";
+
+    fetch("/api/chat/set_history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_type,
+        senderId,
+        message,
+        message_type,
+      }),
+    });
+  };
+
+  const getChatHistory = async (chat_type: string) => {
+    try {
+      const response = await fetch("/api/chat/get_history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chat_type }),
+      });
+
+      const parsedData = await response.json();
+
+      return parsedData;
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      throw new Error("Failed to fetch chat history");
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     try {
       const userInput = values.prompt;
+
+      addChatMessage("dummyUser", userInput, "text");
+
       const detailedPrompt = createPrompt(userInput);
 
       const userMessage: ChatCompletionMessageParam = {
         role: "user",
-        content: detailedPrompt,
-      };
-      const userMessage2: ChatCompletionMessageParam = {
-        role: "user",
         content: userInput,
       };
 
-      const newMessages = [...messages, userMessage];
-      const newMessages2 = [...messages2, userMessage2];
+      const newConversation: [
+        ChatCompletionMessageParam,
+        {
+          script: string | null;
+          speech: string | null;
+          music: string | null;
+          thumbnail: string | null;
+        }
+      ] = [
+        userMessage,
+        { script: null, speech: null, music: null, thumbnail: null },
+      ];
 
-      const response = await axios.post("/api/viralizeai", {
-        messages: newMessages
+      setConversations((current) => [...current, newConversation]);
+
+      const newMessages = [
+        ...conversations.flatMap(([message]) => message),
+        userMessage,
+        { role: "user", content: detailedPrompt },
+      ];
+
+      const response = await fetch("/api/viralizeai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: newMessages }),
       });
 
-      const { content, music, thumbnail, script, speech } = response.data;
+      if (!response.body) throw new Error("No response body");
 
-      console.log(response.data);
-      setMessages((current) => [...current, { role: "assistant", content }, userMessage]);
-      setMessages2((current) => [...current, { role: "assistant", content }, userMessage2]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let accumulatedText = "";
+      const removeQuotes = (str: string) =>
+        str.replace(/^"|"$/g, "").replace(/\\+$/, ""); // Updated to remove trailing quotes and backslashes
+      const urlRegex = /(https?:\/\/[^\s]+)/g; // Regex to match URLs
+      const imageUrlRegex = /\.(jpeg|jpg|gif|png|svg)$/i;
+      const musicUrlRegex = /\.(mp3)$/i;
+      const speechUrlRegex = /\.(wav)$/i;
 
-      if(script) { 
-        setScript(script);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const decodedText = decoder.decode(value);
+
+        if (decodedText.startsWith("data:")) {
+          const contentMatch = decodedText.split("data:")[1];
+          if (contentMatch) {
+            const content = removeQuotes(
+              contentMatch.match(urlRegex)?.[0] || ""
+            );
+            if (imageUrlRegex.test(content)) {
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].thumbnail =
+                  content;
+                return newConversations;
+              });
+              addChatMessage("dummyRobot", content, "thumbnail");
+            } else if (speechUrlRegex.test(content)) {
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].speech =
+                  content;
+                return newConversations;
+              });
+              addChatMessage("dummyRobot", content, "speech");
+            } else if (musicUrlRegex.test(content)) {
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].music =
+                  content;
+                return newConversations;
+              });
+              addChatMessage("dummyRobot", content, "music");
+            } else {
+              setConversations((prev) => {
+                const newConversations = [...prev];
+                newConversations[newConversations.length - 1][1].script =
+                  content;
+                return newConversations;
+              });
+              addChatMessage("dummyRobot", content, "script");
+            }
+          }
+        } else {
+          accumulatedText += decodedText;
+          setConversations((prev) => {
+            const newConversations = [...prev];
+            newConversations[newConversations.length - 1][0] = {
+              role: "assistant",
+              content: accumulatedText,
+            };
+            return newConversations;
+          });
+        }
       }
 
-
-      console.log(speech)
-      if (speech) {
-        setSpeech(speech);
-      }
-
-      if (music) {
-        setMusic(music);
-      }
-      if (thumbnail) {
-
-        
-        setThumbnail(thumbnail);
-      }
-
-
-      form.reset();
+      addChatMessage("dummyRobot", accumulatedText, "text");
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
     } finally {
       router.refresh();
+      form.reset();
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      const chatHistory = await getChatHistory("viralizeai");
+
+      if (chatHistory && chatHistory.messages) {
+        const parsedConversations: [
+          ChatCompletionMessageParam,
+          {
+            script: string | null;
+            speech: string | null;
+            music: string | null;
+            thumbnail: string | null;
+          }
+        ][] = [];
+
+        chatHistory.messages.forEach(
+          (msg: { sender_id: string; message: any; message_type: string }) => {
+            const message: ChatCompletionMessageParam = {
+              role: msg.sender_id === "dummyUser" ? "user" : "assistant",
+              content: msg.message,
+            };
+
+            const media = {
+              script: null,
+              speech: null,
+              music: null,
+              thumbnail: null,
+            };
+
+            switch (msg.message_type) {
+              case "speech":
+                media.speech = msg.message;
+                break;
+              case "thumbnail":
+                media.thumbnail = msg.message;
+                break;
+              case "music":
+                media.music = msg.message;
+                break;
+              case "script":
+                media.script = msg.message;
+                break;
+              default:
+                break;
+            }
+
+            parsedConversations.push([message, media]);
+          }
+        );
+
+        setConversations(parsedConversations);
+      } else {
+        console.error("Chat history is null or messages are missing.");
+      }
+    };
+
+    fetchChatHistory();
+
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [conversations]);
 
   const renderMessageContent = (content: string) => {
     return (
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ node, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4" />,
-          h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-bold mb-3" />,
-          h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-bold mb-2" />,
-          strong: ({ node, ...props }) => <strong {...props} className="font-bold" />,
-          p: ({ node, ...props }) => <p {...props} className="" />,
-          ul: ({ node, ...props }) => <ul {...props} className="list-disc list-inside pl-6" />,
-          li: ({ node, ...props }) => <li {...props} className="" />,
-          table: ({ node, ...props }) => <table {...props} className="table-auto justify-center border-collapse border border-gray-200 my-2" />,
-          th: ({ node, ...props }) => <th {...props} className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2" />,
-          td: ({ node, ...props }) => <td {...props} className="border border-gray-200 px-4 py-2" />,
-          tr: ({ node, ...props }) => <tr {...props} className="even:bg-pink-100" />,
+          h1: ({ node, ...props }) => (
+            <h1 {...props} className="text-2xl font-bold mb-4" />
+          ),
+          h2: ({ node, ...props }) => (
+            <h2 {...props} className="text-xl font-bold mb-3" />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 {...props} className="text-lg font-bold mb-2" />
+          ),
+          strong: ({ node, ...props }) => (
+            <strong {...props} className="font-bold" />
+          ),
+          p: ({ node, ...props }) => (
+            <p {...props} className="whitespace-pre-wrap break-words" />
+          ),
+          ul: ({ node, ...props }) => (
+            <ul {...props} className="list-disc list-inside pl-6 break-words" />
+          ),
+          li: ({ node, ...props }) => <li {...props} className="break-words" />,
+          table: ({ node, ...props }) => (
+            <div className="overflow-auto">
+              <table
+                {...props}
+                className="table-auto justify-center border-collapse border border-gray-200 my-2 w-full"
+              />
+            </div>
+          ),
+          th: ({ node, ...props }) => (
+            <th
+              {...props}
+              className="text-center border text-pink-900 bg-pink-100 border-gray-200 px-4 py-2 break-words"
+            />
+          ),
+          td: ({ node, ...props }) => (
+            <td
+              {...props}
+              className="border border-gray-200 px-4 py-2 break-words"
+            />
+          ),
+          tr: ({ node, ...props }) => (
+            <tr {...props} className="even:bg-pink-100" />
+          ),
         }}
       >
         {content}
@@ -205,7 +423,7 @@ const ContentGenerationPage = () => {
   };
 
   return (
-    <div>
+    <div className="h-screen flex flex-col overflow-hidden">
       <Heading
         title="All in One Content Generation"
         description="Your personal AI social media strategist"
@@ -214,18 +432,142 @@ const ContentGenerationPage = () => {
         bgColor="bg-pink-500/10"
       />
       <div className="flex items-left justify-center mb-4 p-5">
-        <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-          Transform any thoughts into high quality content, idea, audio, script, music, and video into viral content!<br /> Blend your persona with trending topics and your goals for the ultimate viral creation!
+        <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-2 px-6 rounded-lg rounded-full">
+          Transform any thoughts into high quality content, idea, audio, script,
+          music, and video into viral content!
+          <br /> Blend your persona with trending topics and your goals for the
+          ultimate viral creation!
         </h3>
       </div>
-      <div className="px-4 lg:px-8">
-        <div className="mb-8 bg-pink-300/20 rounded-lg border w-full p-4 px-3 focus-within:shadow-sm gap-8">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+      <div
+        className="flex-1 overflow-auto px-4 my-4 lg:px-8"
+        ref={chatContainerRef}
+      >
+        <div className="space-y-4 mt-4">
+          {conversations.length == 0 && !isLoading && (
+            <Empty label="No conversation started." />
+          )}
+          <div className="flex flex-col gap-y-4">
+            {conversations.map(([message, media], index) => (
+              <div key={index}>
+                <div
+                  className={cn(
+                    "p-8 flex flex-col gap-y-4 w-full rounded-lg break-words",
+                    message.role === "user"
+                      ? "bg-white border border-black/10"
+                      : "bg-muted"
+                  )}
+                >
+                  <div className="flex items-start gap-x-8">
+                    {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
+                    {typeof message.content === "string" ? (
+                      <div className="whitespace-pre-wrap break-words w-full overflow-auto">
+                        {renderMessageContent(message.content)}
+                      </div>
+                    ) : (
+                      "Invalid message content"
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-y-4 w-full">
+                    {media && (
+                      <>
+                        {media.script && (
+                          <div>
+                            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Too Lazy to Record? Here is your generated script
+                              and voiceover!
+                            </h3>
+                            <p>Here is your script: {media.script}</p>
+                          </div>
+                        )}
+                        {media.speech && (
+                          <div>
+                            <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Here is your generated voiceover for this video
+                              content!
+                            </h3>
+                            <audio controls className="w-full mt-8 p-1">
+                              <source src={media.speech} type="audio/wav" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        )}
+                        {media.music && (
+                          <div>
+                            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Your Personalized Background Music for this video
+                              content is generated!
+                            </h3>
+                            <audio controls className="w-full mt-8 p-1">
+                              <source src={media.music} type="audio/mp3" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        )}
+                        {media.thumbnail && (
+                          <div>
+                            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
+                              Your Generated Thumbnail for this video content.
+                            </h3>
+                            <Card className="rounded-lg overflow-hidden">
+                              <div className="relative aspect-square">
+                                <Image
+                                  src={media.thumbnail}
+                                  alt="generated image"
+                                  width={500} // Adjust the width as necessary
+                                  height={500} // Adjust the height as necessary
+                                  layout="responsive" // Optional: To maintain the aspect ratio
+                                  objectFit="cover" // Optional: To define how the image should be resized
+                                />
+                              </div>
+                              <CardFooter className="p-2">
+                                <Button
+                                  onClick={() =>
+                                    media.thumbnail &&
+                                    window.open(media.thumbnail)
+                                  }
+                                  variant="secondary"
+                                  className="w-full"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </CardFooter>
+                            </Card>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-center mb-8">
+        {isButtonVisible &&
+          examplePrompts.map((prompt, index) => (
+            <Button
+              key={index}
+              onClick={() => handleExampleClick(prompt)}
+              className="p-4 my-2 mx-2 max-w-96 box-content bg-pink-500"
             >
-              <FormField name="prompt" render={({ field }) => (
+              <div className="text-left">
+                <span className="block whitespace-pre-wrap">{prompt}</span>
+              </div>
+            </Button>
+          ))}
+      </div>
+      <div className="px-4 lg:px-8">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="rounded-lg border w-full p-4 mb-4 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2 relative"
+          >
+            <FormField
+              name="prompt"
+              render={({ field }) => (
                 <FormItem className="col-span-12 lg:col-span-10">
                   <FormControl className="m-0 p-0">
                     <Input
@@ -236,101 +578,24 @@ const ContentGenerationPage = () => {
                     />
                   </FormControl>
                 </FormItem>
-              )} />
-              <Button disabled={isLoading} className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700">
-                Generate
-              </Button>
-            </form>
-          </Form>
-        </div>
-      </div>
-      <div className="space-y-4 mt-4 p-6">
-        {isLoading && (
-          <div className="p-8 rounded-lg w-full items-center justify-center bg-muted flex">
-            <Loader />
-          </div>
-        )}
-        {messages.length == 0 && !isLoading && (
-          <Empty label="No conversation started." />
-        )}
-        <div className="flex flex-col-reverse gap-y-4">
-          {messages2.map((message, index) => (
-            <div 
-              key={index}
-              className={cn(
-                "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
               )}
+            />
+            <Button
+              disabled={isLoading}
+              className="w-full p-2 col-span-12 lg:col-span-2 bg-pink-700"
             >
-              {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-              {typeof message.content === "string" ? (
-                <div className="whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
-              ) : (
-                "Invalid message content"
-              )}
-            </div>
-          ))}
-        </div>
-        
-        {script && (
-          <div>
-          <h3 className="px-6 bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-              Too Lazy to Record? Here is your generated script and voiceover!
-          </h3>
-          <p>Here is your script: {script}</p>
-          </div>
-        )}
-        {speech && (   
-            <audio controls className="w-full mt-8 p-1">
-              <source src={speech}  type="audio/wav"  />
-              Your browser does not support the audio element.
-            </audio>
-        )}
-        {music && (
-          <div className="space-y-4 mt-4">
-            <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-              Your Personalized Background Music for this video content is generated! 
-            </h3>
-            <audio controls className="w-full mt-8 p-1">
-              <source src={music} type = "audio/mp3"/>
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        )}
-        {thumbnail && (
-          <div className="space-y-4 mt-4">
-          <h3 className="bg-pink-500/20 text-center text-pink-800 font-bold py-6 px-3 rounded-lg mb-2 rounded-full">
-            Your Generated Thumbnail for this video content.
-          </h3>
-          <Card className="rounded-lg overflow-hidden">
-            <div className="relative aspect-square">
-              <Image 
-                src = {thumbnail} 
-                alt='generated image' 
-                width={500}  // Adjust the width as necessary
-                height={500} // Adjust the height as necessary
-                layout="responsive" // Optional: To maintain the aspect ratio
-                objectFit="cover"  // Optional: To define how the image should be resized
-              />
-            </div>
-            <CardFooter className="p-2">
-              <Button
-                onClick={() => window.open(thumbnail)}
-                variant="secondary"
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-        
-         
-        )}
+              Generate
+            </Button>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
+                <Loader />
+              </div>
+            )}
+          </form>
+        </Form>
       </div>
     </div>
   );
-}
+};
 
 export default ContentGenerationPage;

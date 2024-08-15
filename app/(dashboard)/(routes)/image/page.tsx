@@ -44,11 +44,7 @@ const ImageGenerationPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setImages([]);
-      console.log(values);
-
       const response = await axios.post("/api/image", values);
-      console.log(response.data); // Debugging line
-
       if (Array.isArray(response.data)) {
         const urls = response.data.map((image: { url: string }) => image.url);
         setImages(urls);
@@ -58,7 +54,7 @@ const ImageGenerationPage = () => {
       form.reset();
     } catch (error: any) {
       // Handle errors
-      console.log(error);
+      console.error(error);
     } finally {
       router.refresh();
     }

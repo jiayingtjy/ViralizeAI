@@ -4,14 +4,16 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
-    "noEmit": true,
+    "noEmit": false, // Changed from true to false to allow emitting compiled files
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "commonjs", // Changed to commonjs for compatibility with Node.js
+    "moduleResolution": "node", // Changed to node for better module resolution
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "outDir": "./dist", // Output directory for compiled files
+    "rootDir": "./", // Root directory of the source files
     "plugins": [
       {
         "name": "next"
@@ -21,6 +23,13 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "workers/**/*.ts",
+    "worker/worker.js"
+  ],
   "exclude": ["node_modules"]
 }
